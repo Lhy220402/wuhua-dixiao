@@ -38,6 +38,8 @@ export const BALANCE = {
     gravity: 1900,
     jumpVel: 640,
     jumpCut: 0.45,
+    /** 起跳后至少保持满速的时间：触屏轻点也能跳出约 2 格，按住才到最高点 */
+    jumpCutDelay: 0.12,
     maxFall: 1000,
     coyote: 0.1,
     jumpBuffer: 0.12,
