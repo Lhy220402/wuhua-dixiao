@@ -1,0 +1,202 @@
+import { describe, expect, it } from "vitest";
+import { BALANCE } from "../config/balance";
+import { XIAOCHANG } from "../content/bosses/boss1";
+import type { BossDef, LaserPatternDef } from "../content/types";
+import { playerRect, type Rect, type Vec } from "../core/types";
+import { LaserBoss } from "../systems/laser-boss";
+import { beamHitsPlayer, exposureFailed, updateExposure } from "../systems/vision";
+
+/**
+ * 笑长视线激光状态机回归测试（docs/20 §2.3 / §4）。
+ * 用固定步长直接驱动纯逻辑类，不依赖 WebGL / DOM。
+ */
+
+const DT = 1 / 120;
+
+const HALL_EYES: Vec[] = [
+  { x: BALANCE.level1.boss1EyeLeftX, y: BALANCE.level1.boss1EyeY },
+  { x: BALANCE.level1.boss1EyeRightX, y: BALANCE.level1.boss1EyeY },
+];
+
+interface BossOptions {
+  eyes?: Vec[];
+  plaques?: Rect[];
+  patterns?: LaserPatternDef[];
+  cycle?: string[];
+  blinkPeriodMs?: number;
+  blinkWindowMs?: number;
+}
+
+function makeBoss(opts: BossOptions = {}): LaserBoss {
+  const def: BossDef = {
+    ...XIAOCHANG,
+    blinkPeriodMs: opts.blinkPeriodMs ?? 1_000_000,
+    blinkWindowMs: opts.blinkWindowMs ?? 0,
+    patterns: opts.patterns ?? XIAOCHANG.patterns,
+    attackCycle: opts.cycle ?? [...BALANCE.level1.patternCycle],
+  };
+  return new LaserBoss(def, opts.eyes ?? HALL_EYES, opts.plaques ?? []);
+}
+
+interface BossInfo {
+  mode: string;
+  timer: number;
+  pattern: string;
+  beamX: number[];
+}
+
+const info = (boss: LaserBoss): BossInfo => boss.debugInfo as unknown as BossInfo;
+
+function tick(boss: LaserBoss, seconds: number, playerX = 480): void {
+  const steps = Math.round(seconds / DT);
+  for (let i = 0; i < steps; i++) boss.update(DT, playerX);
+}
+
+function advanceUntil(
+  boss: LaserBoss,
+  pred: () => boolean,
+  playerX = 480,
+  maxSeconds = 40,
+): void {
+  if (pred()) return;
+  const steps = Math.ceil(maxSeconds / DT);
+  for (let i = 0; i < steps; i++) {
+    boss.update(DT, playerX);
+    if (pred()) return;
+  }
+  throw new Error(`condition not reached: ${JSON.stringify(info(boss))}`);
+}
+
+const beamXs = (boss: LaserBoss): number[] => boss.beams.map((b) => Math.round(b.x));
+
+describe("LaserBoss P1 单眼横扫", () => {
+  it("预警期光束停在起始位置，预警线就是落点；预警期无判定", () => {
+    const boss = makeBoss();
+    advanceUntil(boss, () => info(boss).mode === "telegraph");
+    expect(info(boss).pattern).toBe("p1");
+    expect(boss.state.telegraph).toBe(true);
+    expect(boss.state.beams).toHaveLength(0);
+
+    tick(boss, BALANCE.level1.gazeTelegraphDuration * 0.9);
+    expect(info(boss).mode).toBe("telegraph");
+    expect(beamXs(boss)).toEqual([BALANCE.level1.p1StartX]);
+  });
+
+  it("开火后从起始位置匀速横扫，而不是提前从预警漂移后的位置开始", () => {
+    const boss = makeBoss();
+    advanceUntil(boss, () => info(boss).mode === "sweep");
+    expect(info(boss).pattern).toBe("p1");
+    expect(beamXs(boss)).toEqual([BALANCE.level1.p1StartX]);
+
+    tick(boss, 0.5);
+    expect(boss.beams).toHaveLength(1);
+    expect(boss.beams[0]!.x).toBeCloseTo(
+      BALANCE.level1.p1StartX + BALANCE.level1.p1Speed * 0.5,
+      0,
+    );
+  });
+});
+
+describe("LaserBoss P2 双眼交叉", () => {
+  it("两束分别停在 160/800 预警，开火后反向移动并真正交叉", () => {
+    const boss = makeBoss();
+    advanceUntil(boss, () => info(boss).pattern === "p2" && info(boss).mode === "telegraph");
+    tick(boss, BALANCE.level1.gazeTelegraphDuration * 0.5);
+    expect(beamXs(boss)).toEqual([BALANCE.level1.p1StartX, BALANCE.level1.p1EndX]);
+
+    advanceUntil(boss, () => info(boss).mode === "sweep");
+    expect(beamXs(boss)).toEqual([BALANCE.level1.p1StartX, BALANCE.level1.p1EndX]);
+
+    tick(boss, 1.0);
+    const expected = Math.round(BALANCE.level1.p2Speed * 1.0);
+    expect(beamXs(boss)).toEqual([
+      BALANCE.level1.p1StartX + expected,
+      BALANCE.level1.p1EndX - expected,
+    ]);
+  });
+
+  it("单眼房间（R2）的交叉段仍是一束横移光束，不是原地不动", () => {
+    const boss = makeBoss({ eyes: [{ x: 224, y: 192 }] });
+    advanceUntil(boss, () => info(boss).pattern === "p2" && info(boss).mode === "telegraph");
+    expect(boss.beams).toHaveLength(1);
+    tick(boss, BALANCE.level1.gazeTelegraphDuration * 0.5);
+    expect(beamXs(boss)).toEqual([BALANCE.level1.p1StartX]);
+
+    advanceUntil(boss, () => info(boss).mode === "sweep");
+    tick(boss, 1.0);
+    expect(boss.beams[0]!.x).toBeCloseTo(
+      BALANCE.level1.p1StartX + BALANCE.level1.p2Speed * 1.0,
+      0,
+    );
+  });
+});
+
+describe("LaserBoss P3 凝视锁定", () => {
+  it("预警期追踪玩家，锁死后停在锁定点、不再跟人", () => {
+    const boss = makeBoss();
+    advanceUntil(boss, () => info(boss).pattern === "p3" && info(boss).mode === "telegraph");
+    tick(boss, BALANCE.level1.gazeTelegraphDuration * 0.5, 480);
+    expect(beamXs(boss)).toEqual([480, 480]);
+
+    advanceUntil(boss, () => info(boss).mode === "sweep", 480);
+    // 锁定后玩家横移：光束必须停在锁定点，否则「锁定」变成无限追踪
+    tick(boss, 0.5, 800);
+    expect(info(boss).mode).toBe("sweep");
+    expect(beamXs(boss)).toEqual([480, 480]);
+    expect(boss.state.beams).toHaveLength(2);
+  });
+
+  it("锁定后站着不动 2.5s 读条打满，锁定瞬间横移则读条回落", () => {
+    const scenario = (dodge: boolean): number => {
+      const boss = makeBoss();
+      advanceUntil(boss, () => info(boss).pattern === "p3" && info(boss).mode === "telegraph");
+      let exposure = { value: 0, warned: false };
+      let dodged = false;
+      for (let t = 0; t < 3.4; t += DT) {
+        const px = dodge && dodged ? 600 : 480;
+        boss.update(DT, px);
+        const body = playerRect(px, 512, BALANCE.player.w, BALANCE.player.h);
+        const visible = boss.state.beams.some((b) =>
+          beamHitsPlayer(b.x, b.top, b.bottom, BALANCE.level1.gazeBeamWidth, body),
+        );
+        exposure = updateExposure(DT, visible, exposure);
+        if (dodge && !dodged && info(boss).mode === "sweep") dodged = true;
+      }
+      return exposure.value;
+    };
+
+    expect(exposureFailed(scenario(false))).toBe(true);
+    expect(exposureFailed(scenario(true))).toBe(false);
+  });
+});
+
+describe("LaserBoss 眨眼 / 挂牌", () => {
+  it("眨眼时光束判定关闭，闭眼结束后恢复可开火状态", () => {
+    const boss = makeBoss({
+      blinkPeriodMs: BALANCE.level1.blinkPeriod * 1000,
+      blinkWindowMs: BALANCE.level1.blinkWindow * 1000,
+    });
+    advanceUntil(boss, () => boss.state.blink, 480, 6);
+    expect(boss.state.beams).toHaveLength(0);
+
+    tick(boss, BALANCE.level1.blinkWindow + 0.1);
+    expect(boss.state.blink).toBe(false);
+  });
+
+  it("挂牌把光束截断在挂牌顶面，阴影区不判定；站在挂牌上仍会被照到", () => {
+    const plaque: Rect = { x: 432, y: 256, w: 96, h: 20 };
+    const boss = makeBoss({
+      eyes: [{ x: 480, y: 64 }],
+      plaques: [plaque],
+      patterns: [
+        { id: "p1", label: "测试", kind: "sweep", startX: 480, endX: 480, speed: 0 },
+      ],
+      cycle: ["p1", "p1", "p1", "p1"],
+    });
+    advanceUntil(boss, () => info(boss).mode === "sweep");
+    const beam = boss.beams[0]!;
+    expect(beam.bottom).toBe(plaque.y);
+    expect(beamHitsPlayer(beam.x, beam.top, beam.bottom, BALANCE.level1.gazeBeamWidth, playerRect(480, 512, 20, 28))).toBe(false);
+    expect(beamHitsPlayer(beam.x, beam.top, beam.bottom, BALANCE.level1.gazeBeamWidth, playerRect(480, 256, 20, 28))).toBe(true);
+  });
+});

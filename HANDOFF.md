@@ -12,13 +12,13 @@
 - **源码仓库**：https://github.com/Lhy220402/wuhua-dixiao
 - **本地产物**：`dist/`（静态托管）、`/sdcard/Download/DSH-Go/物化帝笑传-web.zip`
 
-## 1. 当前状态（2026-11-22）
+## 1. 当前状态（2026-11-23）
 
 | 项目 | 状态 |
 |---|---|
 | 代码实现 | **已完成**，两关可玩，`src/` 约 40 个 TS/文件 |
 | 依赖 | 仅 `kaplay`（运行时）+ `vite` / `typescript` / `vitest`（开发） |
-| 测试 | `pnpm test` → **9 个文件 / 50 条全绿** |
+| 测试 | `pnpm test` → **10 个文件 / 62 条全绿**（含激光判定回归） |
 | 构建 | `pnpm build` 通过；gzip 约 114KB JS + 6KB CSS |
 | 上线 | GitHub Pages 已发布（`gh-pages` 分支），线上标题/开局/渲染已验证 |
 | 手机真机 | 横屏渲染、触控移动/跳跃、暂停、全屏按钮已验证；完整两关建议人工复跑 |
@@ -56,7 +56,7 @@
 cd /root/workspace/wuhua-dixiao
 pnpm install        # 已装过可跳过；pnpm 12，已配置 esbuild 构建白名单
 pnpm dev            # http://localhost:5173/ ，手机同局域网用 http://<IP>:5173/
-pnpm test           # Vitest 纯逻辑单测（50 条）
+pnpm test           # Vitest 纯逻辑单测（62 条）
 pnpm typecheck      # tsc --noEmit
 pnpm build          # dist/，base: "./"，可子路径托管
 pnpm preview        # 预览生产构建
@@ -105,7 +105,7 @@ src/
     items.ts / shops.ts / buffs.ts / memes.ts / cutscenes.ts / audio-manifest.ts
   art/                      # 代码生成扁平矢量：玩家/笑长/Boss2/NPC/瓦片/物品/FX
   ui/                       # HUD / 对话 / 商店 / 过场跳过 / 标题/暂停/失败/结算/TBC / 触控
-  tests/                    # 9 个 vitest 文件，50 条
+  tests/                    # 10 个 vitest 文件，62 条
 docs/                       # v0.1 设计文档（冻结）
 screenshots/                # 手机实机、音频处理前后频谱
 ```
@@ -133,8 +133,9 @@ screenshots/                # 手机实机、音频处理前后频谱
 - 眨眼每 4s 闭眼 1.2s；眨眼期间光束判定同时消失，眨眼结束后若原本在扫射会恢复。
 - 判定光束宽 6px、视觉 10px；挂牌挡光束，下方阴影安全。
 - 暴露读条 +1/s、离开 3× 回落、2.5s 失败；老吴 buff ×0.6 / 25s / CD 60s。
-- **P3 锁定改为 4.0s**（原文档 1.2s），否则 2.5s 读条无法打满；改 `BALANCE.level1.p3LockHold`。
+- **P3 锁定改为 4.0s**（原文档 1.2s）；锁定后光束停在锁定点，站着不动 2.5s 读条打满；改 `BALANCE.level1.p3LockHold`。
 - 第一关 R2/R3 加了 64px 坑以满足「掉坑失败」；R1 地面完整教学。
+- 光束移动契约（2026-11-23 修正，见 §6.11）：预警期只有 P3 追踪玩家，P1/P2 停在起始位置；开火后 P1 160→800、P2 两束反向交叉、P3 冻结。
 
 ### 6.5 第一关商店/过场
 - 计时从进入 R3 开始；45s 解锁；在 R4 出现（延迟 1s）；金币<10 借到 10。
@@ -175,12 +176,20 @@ screenshots/                # 手机实机、音频处理前后频谱
 - R1 上层平台从 `x480` 移到 `x352`、R3 从 `x448` 移到 `x288`，因为原横距 192px 超出 96px 高度差下的跳跃弧（约 98px）。
 - `src/tests/physics.test.ts` 覆盖轻点/按住高度、短跳只结算一次、空中不可二段跳。
 
+### 6.11 笑长激光判定修复（2026-11-23）
+- **P2 双眼交叉完全不动**：交叉分支的目标写反（两束都瞄向自己起点），两束永远停在 x=160/800，整段攻击无威胁。改为左束往右端、右束往左端真正交叉。
+- **预警期提前漂移**：横扫/交叉在 0.8s 预警期就执行了开火移动，预警线不是落点（P1 实际从 x≈432 而不是 160 开火）。改为预警期只让 P3 追踪，P1/P2 停在起始位置。
+- **P3 锁定后继续追人**：`lock` 在 4.0s 锁定期间仍按 240px/s 跟随玩家，等于无解追踪。改为预警期追踪、开火后停在锁定点；站着不动 2.5s 读条打满，锁定瞬间横移可以躲。
+- 单眼房间（R2）的交叉段原本是钉死在 x=800 的死光束，现在作为单束横向扫射。
+- 新增 `src/tests/laser-boss.test.ts`（8 条：P1/P2/P3 轨迹、单眼、眨眼、挂牌截断、锁定读条）与 `beamHitsPlayer` 几何断言（4 条）；`pnpm test` 62 条全绿。
+- 无头运行时验证（Chromium `--use-angle=swiftshader-webgl` 可跑 WebGL2 + `window.__CMI__` 调试桥）：P3 锁定站着不动 2.5s → `Fail/gaze`；锁定后横移 → 暴露 0、不失败；P2 实机光束从 `[180,780]` 交叉到 `[380,580]`。
+
 ## 7. 验收记录（已跑）
 
 | 项 | 结果 |
 |---|---|
 | `pnpm typecheck` | 通过 |
-| `pnpm test` | 50/50 通过（1.6s） |
+| `pnpm test` | 62/62 通过（10 文件，约 1.5s） |
 | `pnpm build` | 通过，dist gzip ≈ 114KB JS + 6KB CSS |
 | PC 全流程 | 标题→第一关→商店→买枪→过场跳过→结算→第二关→巨大化→碰鞋→TBC，全通 |
 | 失败 | 尖刺/掉坑、视线满、HP≤0、金币≤0；失败页与 `sfx.fail` 正常 |
@@ -189,8 +198,10 @@ screenshots/                # 手机实机、音频处理前后频谱
 | 设置 | 减少动效/音量/控制方案写档并即时生效；暂停菜单正常 |
 | 手机真机 | 横屏渲染/触控移动跳跃/暂停/全屏已截图；线上 GitHub Pages 可开局 |
 | 生产子路径 | `dist/` 放在 `/wuhua-dixiao/` 下静态服务可跑，无 404（除故意缺失的音频） |
+| 笑长激光判定 | 单测 + 无头运行时：P1 预警线即落点、P2 真交叉、P3 锁定冻结；锁定站着不动 2.5s 失败、横移不失败 |
 
-> 注意：本机 Playwright/无头 Chromium 使用 SwiftShader，Kaplay 的 WebGL2 会 context lost，导致无头截图里 canvas 是空的；这是测试环境限制，**真机手机/正常浏览器渲染正常**。不要据此误判游戏坏掉。
+> 注意：本机 Playwright/无头 Chromium 默认 SwiftShader 参数下 Kaplay 的 WebGL2 会 context lost，无头截图里 canvas 是空的；这是测试环境限制，**真机手机/正常浏览器渲染正常**。不要据此误判游戏坏掉。
+> 纯逻辑/运行时验证可用 `--use-gl=angle --use-angle=swiftshader-webgl --enable-unsafe-swiftshader --ignore-gpu-blocklist` 启动 Chromium：WebGL2 可用、游戏循环可跑、`window.__CMI__.debugState()` 可取状态；截图仍可能是空白 canvas（context lost），不要以截图为唯一证据。
 
 ## 8. 已知偏差 / 技术债（按优先级）
 
@@ -247,6 +258,7 @@ screenshots/                # 手机实机、音频处理前后频谱
 - [ ] 手机横屏：触控移动/跳/射击/交互/暂停/全屏；完整两关
 - [ ] 刷新继续、损坏档重置、隐私模式可玩
 - [ ] 删除 `public/audio/` 后仍可通关，控制台每 ID 只 warn 一次
+- [ ] 第一关 R2/R3/R4：P1 光束从左侧起扫、P2 两束交叉、P3 锁定后不追人；眨眼/挂牌阴影安全
 - [ ] 固定文案逐字未改；小明无台词
 - [ ] 线上 URL 可开局、资源无 404（音频除外）
 

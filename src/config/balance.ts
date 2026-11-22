@@ -113,6 +113,8 @@ export const BALANCE = {
     gazeBeamWidth: 6,
     gazeVisualWidth: 10,
     gazeBeamLength: 1200,
+    gazeIdleDuration: 0.4,
+    gazeBeamTopOffset: 8,
     gazeSweepPeriod: 3.6,
     gazeSweepDuration: 1.8,
     gazeRecoverDuration: 1.0,
@@ -126,7 +128,7 @@ export const BALANCE = {
     p1Speed: 340,
     p2Speed: 300,
     p3TrackSpeed: 240,
-    p3LockHold: 4.0, // docs 原值 1.2s；为使 2.5s 暴露读条可达成，锁定凝视延长到 2.6s（playtest 调参）
+    p3LockHold: 4.0, // docs 原值 1.2s；光束锁死后停住不再追人，4.0s 足够让站着不动的玩家被 2.5s 读条打满（playtest 调参）
     boss1Hp: 999,
     boss1EyeLeftX: 432,
     boss1EyeRightX: 512,
