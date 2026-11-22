@@ -133,3 +133,8 @@ pnpm build
 
 - [HANDOFF.md](HANDOFF.md)：当前实现状态、目录、关键实现、已知坑、发布与验收记录（给接手的 AI）。
 - [START-PROMPT.md](START-PROMPT.md)：续作/维护/只修一个 bug/只做发布的新对话提示词，复制即用。
+
+## 交接
+
+- [HANDOFF.md](HANDOFF.md)：当前状态、架构、关键实现、已知偏差、发布凭据与验收清单（v1.0，2026-11-23）。
+- [START-PROMPT.md](START-PROMPT.md)：新对话可直接复制的续作/维护提示词；含只修 bug 和只做发布两段短提示词。

@@ -1,4 +1,4 @@
-# 《物化帝笑传》交接文档（v0.1 · 2026-11-22）
+# 《物化帝笑传》交接文档（v1.0 · 2026-11-23）
 
 > 用途：把当前**已实现、已上线**的项目完整交给下一个对话 / 新 AI。
 > 先读本文件，再按「第 3 节」读代码；设计文档在 `docs/`，`docs/02-data-contracts.md` 是唯一事实来源。
@@ -18,7 +18,7 @@
 |---|---|
 | 代码实现 | **已完成**，两关可玩，`src/` 约 40 个 TS/文件 |
 | 依赖 | 仅 `kaplay`（运行时）+ `vite` / `typescript` / `vitest`（开发） |
-| 测试 | `pnpm test` → **8 个文件 / 45 条全绿** |
+| 测试 | `pnpm test` → **9 个文件 / 50 条全绿** |
 | 构建 | `pnpm build` 通过；gzip 约 114KB JS + 6KB CSS |
 | 上线 | GitHub Pages 已发布（`gh-pages` 分支），线上标题/开局/渲染已验证 |
 | 手机真机 | 横屏渲染、触控移动/跳跃、暂停、全屏按钮已验证；完整两关建议人工复跑 |
@@ -56,7 +56,7 @@
 cd /root/workspace/wuhua-dixiao
 pnpm install        # 已装过可跳过；pnpm 12，已配置 esbuild 构建白名单
 pnpm dev            # http://localhost:5173/ ，手机同局域网用 http://<IP>:5173/
-pnpm test           # Vitest 纯逻辑单测（45 条）
+pnpm test           # Vitest 纯逻辑单测（50 条）
 pnpm typecheck      # tsc --noEmit
 pnpm build          # dist/，base: "./"，可子路径托管
 pnpm preview        # 预览生产构建
@@ -105,7 +105,7 @@ src/
     items.ts / shops.ts / buffs.ts / memes.ts / cutscenes.ts / audio-manifest.ts
   art/                      # 代码生成扁平矢量：玩家/笑长/Boss2/NPC/瓦片/物品/FX
   ui/                       # HUD / 对话 / 商店 / 过场跳过 / 标题/暂停/失败/结算/TBC / 触控
-  tests/                    # 8 个 vitest 文件，45 条
+  tests/                    # 9 个 vitest 文件，50 条
 docs/                       # v0.1 设计文档（冻结）
 screenshots/                # 手机实机、音频处理前后频谱
 ```
@@ -169,12 +169,18 @@ screenshots/                # 手机实机、音频处理前后频谱
 - 过场有全屏透明 skip 层 + 右上「跳过 ▸▸」按钮，触控可用。
 - 减少动效：`prefers-reduced-motion` + `body.reduce-motion`，设置写存档。
 
+### 6.10 跳跃手感（2026-11-23 修复）
+- `jumpCutDelay = 0.12s`：起跳后 0.12s 内不结算短跳，避免触屏轻点（<1 帧）只跳 20–37px。
+- 实测：轻点约 **69px（2.2 格）**，按住约 **103px（3.2 格）**；数值在 `BALANCE.player.jumpCutDelay`。
+- R1 上层平台从 `x480` 移到 `x352`、R3 从 `x448` 移到 `x288`，因为原横距 192px 超出 96px 高度差下的跳跃弧（约 98px）。
+- `src/tests/physics.test.ts` 覆盖轻点/按住高度、短跳只结算一次、空中不可二段跳。
+
 ## 7. 验收记录（已跑）
 
 | 项 | 结果 |
 |---|---|
 | `pnpm typecheck` | 通过 |
-| `pnpm test` | 45/45 通过（1.8s） |
+| `pnpm test` | 50/50 通过（1.6s） |
 | `pnpm build` | 通过，dist gzip ≈ 114KB JS + 6KB CSS |
 | PC 全流程 | 标题→第一关→商店→买枪→过场跳过→结算→第二关→巨大化→碰鞋→TBC，全通 |
 | 失败 | 尖刺/掉坑、视线满、HP≤0、金币≤0；失败页与 `sfx.fail` 正常 |
@@ -196,7 +202,8 @@ screenshots/                # 手机实机、音频处理前后频谱
 6. R2/R3 坑为满足掉坑新增，与 20 的满地面网格图略有出入。
 7. 金币不加千分位（02/10 明文，覆盖 40 的 `15,000`）。
 8. iOS Safari 全屏/方向锁定能力有限，已静默降级；真机体验可能不如 Android。
-9. `git push` 在本机网络偶发超时；本次线上更新曾用 GitHub Git Data API 完成。不要因此重复 force push 覆盖线上。
+9. **跳跃短跳**新增 `jumpCutDelay=0.12s`；R1/R3 上层平台横移，均已在上文 6.10 记录。
+10. `git push` 在本机网络偶发超时；线上 master/gh-pages 最终通过 GitHub Git Data API 更新。**本地 HEAD 与远端 commit hash 可能不同，内容一致；新对话请先 `git fetch` 或重新 clone，再改，不要直接 force push。**
 
 ## 9. 待用户提供
 
@@ -217,6 +224,7 @@ screenshots/                # 手机实机、音频处理前后频谱
   # 方式 B（本机网络不稳时）：用 GitHub Git Data API 创建 tree/commit 并 PATCH gh-pages ref
   ```
 - 线上构建注意：`base: "./"`，不要改成绝对 `/`，否则子路径 404。
+- 当前线上 `gh-pages` 与 `master` 已包含跳跃修复；若本地与远端分叉，以远端内容为准，先拉取再改。
 
 ## 11. 常见问题
 

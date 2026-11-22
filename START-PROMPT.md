@@ -23,11 +23,12 @@
 - 技术栈：Kaplay 3001 + TypeScript + Vite，纯前端静态站；运行时依赖只有 kaplay。
 - 两关可玩：第一关笑长视线战 + 45s 商店 + 潮夺枪 6s 过场；第二关 6 种攻击 + 巨大化 + 碰鞋 + CP1/CP2。
 - 手机横屏触控 + PC 键鼠；DOM 覆盖层 UI；canvas 只画世界；存档 localStorage key `cmi.save.v1`。
-- `pnpm test` 45 条全绿；`pnpm build` 通过；线上 GitHub Pages 已发布：
+- `pnpm test` 50 条全绿；`pnpm build` 通过；线上 GitHub Pages 已发布：
   https://lhy220402.github.io/wuhua-dixiao/
   仓库：https://github.com/Lhy220402/wuhua-dixiao
 - 失败音效已处理：public/audio/fail.ogg / fail.mp3 / fail.m4a（源文件已降噪、−16 LUFS、mono 48k）。
 - 已知偏差见 HANDOFF.md §8，例如 P3 凝视锁定调成 4.0s、R2/R3 新增 64px 坑、第二关 Boss 名字仍是占位。
+- 跳跃手感已修：`jumpCutDelay=0.12s`（轻点约 69px / 按住约 103px）；R1/R3 上层平台已横移到可达位置，详见 HANDOFF §6.10。
 
 【硬约束】
 - 不新增运行时依赖；开发依赖最多 vitest 等已有项。
@@ -50,6 +51,7 @@
 - Playwright 无头 Chromium 用 SwiftShader 时 Kaplay 的 WebGL2 会 context lost，导致截图 canvas 空白；这是测试环境限制，真机/正常浏览器正常。不要据此误判游戏坏掉。
 - 产出放工作区；给用户的成品/截图复制到 /sdcard/Download/DSH-Go/。
 - GitHub CLI 已在本机登录 Lhy220402；不要把 token 写进文件/提交/聊天。git push 偶尔网络超时，可重试或用 GitHub Git Data API 更新分支。
+- 本地 HEAD 与远端 hash 可能不同（线上最终用 API 更新），新对话先 `git fetch` 或重新 clone，不要直接 force push 覆盖。
 
 【当前待办（按用户优先级）】
 A. 第二关 Boss 正式名字（用户给名字后改 content/bosses/boss2.ts 与 HUD 显示；外形已按“学生”实现）。
