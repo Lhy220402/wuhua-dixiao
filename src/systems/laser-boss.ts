@@ -53,7 +53,7 @@ export class LaserBoss {
     this.blinkPeriod = (def.blinkPeriodMs ?? BALANCE.level1.blinkPeriod * 1000) / 1000;
     this.blinkWindow = (def.blinkWindowMs ?? BALANCE.level1.blinkWindow * 1000) / 1000;
     this.pattern = def.patterns?.find((p) => p.id === "p1") ?? FALLBACK_PATTERN;
-    this.beamX = eyes.map(() => 480);
+    this.beamX = eyes.map(() => LAYOUT.cameraX);
     this.beginIdle();
   }
 
@@ -109,7 +109,7 @@ export class LaserBoss {
     this.wasActiveBeforeBlink = false;
     this.blinkClock = 0;
     this.blinkRemain = 0;
-    this.beamX = this.eyes.map(() => 480);
+    this.beamX = this.eyes.map(() => LAYOUT.cameraX);
     this.frozen = false;
     this.beginIdle();
   }

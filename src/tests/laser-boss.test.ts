@@ -95,6 +95,20 @@ describe("LaserBoss P1 单眼横扫", () => {
       0,
     );
   });
+
+  it("扫满 1.8s 的终点是 ~772（160→800 / 340px/s / 1.8s 三个文档数互斥，锁定当前实现）", () => {
+    const boss = makeBoss();
+    advanceUntil(boss, () => info(boss).mode === "sweep");
+    advanceUntil(boss, () => info(boss).mode === "recover");
+    const endX = boss.beams[0]!.x;
+    // 1.8s × 340px/s = 612px，到不了 endX=800；状态切换帧不推进，因此差一帧
+    expect(endX).toBeGreaterThan(BALANCE.level1.p1StartX);
+    expect(endX).toBeLessThan(BALANCE.level1.p1EndX);
+    expect(endX).toBeCloseTo(
+      BALANCE.level1.p1StartX + BALANCE.level1.p1Speed * BALANCE.level1.gazeSweepDuration,
+      -1,
+    );
+  });
 });
 
 describe("LaserBoss P2 双眼交叉", () => {
@@ -107,12 +121,14 @@ describe("LaserBoss P2 双眼交叉", () => {
     advanceUntil(boss, () => info(boss).mode === "sweep");
     expect(beamXs(boss)).toEqual([BALANCE.level1.p1StartX, BALANCE.level1.p1EndX]);
 
-    tick(boss, 1.0);
-    const expected = Math.round(BALANCE.level1.p2Speed * 1.0);
+    tick(boss, 1.2);
+    const moved = Math.round(BALANCE.level1.p2Speed * 1.2);
     expect(beamXs(boss)).toEqual([
-      BALANCE.level1.p1StartX + expected,
-      BALANCE.level1.p1EndX - expected,
+      BALANCE.level1.p1StartX + moved,
+      BALANCE.level1.p1EndX - moved,
     ]);
+    // 左束已越过右束 → 确实交叉，而不是各走各的
+    expect(beamXs(boss)[0]!).toBeGreaterThan(beamXs(boss)[1]!);
   });
 
   it("单眼房间（R2）的交叉段仍是一束横移光束，不是原地不动", () => {
@@ -132,17 +148,18 @@ describe("LaserBoss P2 双眼交叉", () => {
 });
 
 describe("LaserBoss P3 凝视锁定", () => {
-  it("预警期追踪玩家，锁死后停在锁定点、不再跟人", () => {
+  it("预警期按 240px/s 追踪移动中的玩家，锁死后停在锁定点、不再跟人", () => {
     const boss = makeBoss();
     advanceUntil(boss, () => info(boss).pattern === "p3" && info(boss).mode === "telegraph");
-    tick(boss, BALANCE.level1.gazeTelegraphDuration * 0.5, 480);
-    expect(beamXs(boss)).toEqual([480, 480]);
+    // 预警期把玩家从 480 移到 600：0.5s × 240px/s 后光束应跟到 600
+    tick(boss, 0.5, 600);
+    expect(beamXs(boss)).toEqual([600, 600]);
 
-    advanceUntil(boss, () => info(boss).mode === "sweep", 480);
+    advanceUntil(boss, () => info(boss).mode === "sweep", 600);
     // 锁定后玩家横移：光束必须停在锁定点，否则「锁定」变成无限追踪
     tick(boss, 0.5, 800);
     expect(info(boss).mode).toBe("sweep");
-    expect(beamXs(boss)).toEqual([480, 480]);
+    expect(beamXs(boss)).toEqual([600, 600]);
     expect(boss.state.beams).toHaveLength(2);
   });
 
@@ -181,6 +198,19 @@ describe("LaserBoss 眨眼 / 挂牌", () => {
 
     tick(boss, BALANCE.level1.blinkWindow + 0.1);
     expect(boss.state.blink).toBe(false);
+  });
+
+  it("扫射中眨眼：闭眼熄判，睁眼后恢复同一模式的光束判定", () => {
+    // 2s 周期让第一次眨眼正好落在第一轮扫射（1.2s~3.0s）里
+    const boss = makeBoss({ blinkPeriodMs: 2000, blinkWindowMs: 1200 });
+    advanceUntil(boss, () => boss.state.blink, 480, 4);
+    expect(info(boss).mode).toBe("sweep");
+    expect(boss.state.beams).toHaveLength(0);
+
+    tick(boss, BALANCE.level1.blinkWindow + 0.05);
+    expect(boss.state.blink).toBe(false);
+    expect(info(boss).mode).toBe("sweep");
+    expect(boss.state.beams.length).toBeGreaterThan(0);
   });
 
   it("挂牌把光束截断在挂牌顶面，阴影区不判定；站在挂牌上仍会被照到", () => {

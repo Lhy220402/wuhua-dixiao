@@ -18,7 +18,7 @@
 |---|---|
 | 代码实现 | **已完成**，两关可玩，`src/` 约 40 个 TS/文件 |
 | 依赖 | 仅 `kaplay`（运行时）+ `vite` / `typescript` / `vitest`（开发） |
-| 测试 | `pnpm test` → **10 个文件 / 62 条全绿**（含激光判定回归） |
+| 测试 | `pnpm test` → **10 个文件 / 64 条全绿**（含激光判定回归） |
 | 构建 | `pnpm build` 通过；gzip 约 114KB JS + 6KB CSS |
 | 上线 | GitHub Pages 已发布（`gh-pages` 分支），线上标题/开局/渲染已验证 |
 | 手机真机 | 横屏渲染、触控移动/跳跃、暂停、全屏按钮已验证；完整两关建议人工复跑 |
@@ -56,7 +56,7 @@
 cd /root/workspace/wuhua-dixiao
 pnpm install        # 已装过可跳过；pnpm 12，已配置 esbuild 构建白名单
 pnpm dev            # http://localhost:5173/ ，手机同局域网用 http://<IP>:5173/
-pnpm test           # Vitest 纯逻辑单测（62 条）
+pnpm test           # Vitest 纯逻辑单测（64 条）
 pnpm typecheck      # tsc --noEmit
 pnpm build          # dist/，base: "./"，可子路径托管
 pnpm preview        # 预览生产构建
@@ -105,7 +105,7 @@ src/
     items.ts / shops.ts / buffs.ts / memes.ts / cutscenes.ts / audio-manifest.ts
   art/                      # 代码生成扁平矢量：玩家/笑长/Boss2/NPC/瓦片/物品/FX
   ui/                       # HUD / 对话 / 商店 / 过场跳过 / 标题/暂停/失败/结算/TBC / 触控
-  tests/                    # 10 个 vitest 文件，62 条
+  tests/                    # 10 个 vitest 文件，64 条
 docs/                       # v0.1 设计文档（冻结）
 screenshots/                # 手机实机、音频处理前后频谱
 ```
@@ -181,7 +181,8 @@ screenshots/                # 手机实机、音频处理前后频谱
 - **预警期提前漂移**：横扫/交叉在 0.8s 预警期就执行了开火移动，预警线不是落点（P1 实际从 x≈432 而不是 160 开火）。改为预警期只让 P3 追踪，P1/P2 停在起始位置。
 - **P3 锁定后继续追人**：`lock` 在 4.0s 锁定期间仍按 240px/s 跟随玩家，等于无解追踪。改为预警期追踪、开火后停在锁定点；站着不动 2.5s 读条打满，锁定瞬间横移可以躲。
 - 单眼房间（R2）的交叉段原本是钉死在 x=800 的死光束，现在作为单束横向扫射。
-- 新增 `src/tests/laser-boss.test.ts`（8 条：P1/P2/P3 轨迹、单眼、眨眼、挂牌截断、锁定读条）与 `beamHitsPlayer` 几何断言（4 条）；`pnpm test` 62 条全绿。
+- 新增 `src/tests/laser-boss.test.ts`（10 条：P1/P2/P3 轨迹、终点、单眼、眨眼恢复、挂牌截断、锁定读条）与 `beamHitsPlayer` 几何断言（4 条）；`pnpm test` 64 条全绿。测试做过变异验证：去掉 P3 追踪、眨眼 active 恢复、P2 交叉修复会分别让对应用例失败。
+- 顺手修了眨眼期间仍画 1px 预警线的视觉残留（眼睛已闭、判定冻结时不再画）。
 - 无头运行时验证（Chromium `--use-angle=swiftshader-webgl` 可跑 WebGL2 + `window.__CMI__` 调试桥）：P3 锁定站着不动 2.5s → `Fail/gaze`；锁定后横移 → 暴露 0、不失败；P2 实机光束从 `[180,780]` 交叉到 `[380,580]`。
 
 ## 7. 验收记录（已跑）
@@ -189,7 +190,7 @@ screenshots/                # 手机实机、音频处理前后频谱
 | 项 | 结果 |
 |---|---|
 | `pnpm typecheck` | 通过 |
-| `pnpm test` | 62/62 通过（10 文件，约 1.5s） |
+| `pnpm test` | 64/64 通过（10 文件，约 1.5s） |
 | `pnpm build` | 通过，dist gzip ≈ 114KB JS + 6KB CSS |
 | PC 全流程 | 标题→第一关→商店→买枪→过场跳过→结算→第二关→巨大化→碰鞋→TBC，全通 |
 | 失败 | 尖刺/掉坑、视线满、HP≤0、金币≤0；失败页与 `sfx.fail` 正常 |
@@ -215,6 +216,9 @@ screenshots/                # 手机实机、音频处理前后频谱
 8. iOS Safari 全屏/方向锁定能力有限，已静默降级；真机体验可能不如 Android。
 9. **跳跃短跳**新增 `jumpCutDelay=0.12s`；R1/R3 上层平台横移，均已在上文 6.10 记录。
 10. `git push` 在本机网络偶发超时；线上 master/gh-pages 最终通过 GitHub Git Data API 更新。**本地 HEAD 与远端 commit hash 可能不同，内容一致；新对话请先 `git fetch` 或重新 clone，再改，不要直接 force push。**
+11. **P1 扫射终点 ≈772，不是 docs/20 写的 800**：1.8s×340px/s=612px，而 docs/20 同时给的 160→800、640px、340px/s、1.8s 三数互斥，不可能同时满足。当前保留 balance 现值，测试锁定实际终点；要不要提速到 355.6 或延长到 1.88s 属手感取舍，等用户拍板。
+12. **R3「交替单眼」只实现固定右眼出束**：docs/20 P1 表本身写“右眼”，而 §10 风险说明又写“交替单眼”。两眼的 y 相同、光束是同一根竖列，交替只影响哪只眼变红（美术），不影响判定；未改玩法，等需要时再定视觉方案。
+13. **眨眼时的预警线（已修）**：`drawLaserBoss` 现在眨眼期间不再画 1px 预警线（眼睛已闭、判定冻结）；此前会残留一条没有判定的线。
 
 ## 9. 待用户提供
 

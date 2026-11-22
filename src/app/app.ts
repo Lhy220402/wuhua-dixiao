@@ -2043,8 +2043,8 @@ export class GameApp {
       }
     }
 
-    // 光束（先画细线预警，再画光束）
-    if (state.telegraph) {
+    // 光束（先画细线预警，再画光束）。眨眼中眼睛已闭、判定冻结，预警线也一并隐藏
+    if (state.telegraph && !state.blink) {
       const beams = this.laserBoss.beams;
       for (const b of beams) {
         line(k, b.x, b.top, b.x, b.bottom, pal.laser, 1, 0.8);
