@@ -15,6 +15,7 @@ export interface PlayerState {
   coyote: number;
   jumpBuffer: number;
   jumpCutPending: boolean;
+  jumpTime: number;
   facing: 1 | -1;
   invuln: number;
   frozen: boolean;
@@ -46,6 +47,7 @@ export const createPlayerState = (x: number, y: number): PlayerState => ({
   coyote: 0,
   jumpBuffer: 0,
   jumpCutPending: false,
+  jumpTime: 0,
   facing: 1,
   invuln: 0,
   frozen: false,
@@ -191,11 +193,14 @@ export function stepPlayer(
     p.coyote = 0;
     p.jumpBuffer = 0;
     p.jumpCutPending = true;
+    p.jumpTime = 0;
     jumped = true;
   }
+  if (jumped || p.jumpCutPending) p.jumpTime += dt;
 
-  // 短跳：上升期松开跳跃键，只结算一次
-  if (p.jumpCutPending && !input.jumpHeld && p.vy < 0) {
+  // 短跳：上升期松开跳跃键，只结算一次。
+  // jumpCutDelay 内不切，避免触屏轻点（<1 帧）只跳 20~30px。
+  if (p.jumpCutPending && !input.jumpHeld && p.vy < 0 && p.jumpTime >= b.jumpCutDelay) {
     p.vy *= b.jumpCut;
     p.jumpCutPending = false;
   }
