@@ -6,6 +6,7 @@
 - 第一关：3 个跳跃房 + 礼堂笑长视线战（45s 商店、10 金币买枪、潮夺枪 6s 过场）
 - 第二关：一屏竞技场消耗战（6 种可躲攻击、巨大化、碰鞋胜利）
 - 通关第二关显示「**未完待续**」
+- 在线试玩（GitHub Pages）：**https://lhy220402.github.io/wuhua-dixiao/**
 
 ## 快速开始
 
@@ -109,8 +110,12 @@ pnpm build
 # 把 dist/ 推到 gh-pages 分支，或在仓库 Settings → Pages 选择 GitHub Actions
 ```
 
-本机环境已准备 GitHub CLI，授权后可直接创建仓库、推送 `gh-pages` 分支并开启 Pages。最终地址会形如：
-`https://<github-user>.github.io/wuhua-dixiao/`
+已发布：**https://lhy220402.github.io/wuhua-dixiao/**（仓库 `Lhy220402/wuhua-dixiao`，`gh-pages` 分支，构建类型为 branch）。后续更新：
+
+```bash
+pnpm build
+# 将 dist/ 推送覆盖 gh-pages 分支即可
+```
 
 ## 设计文档
 
