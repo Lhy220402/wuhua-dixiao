@@ -1,46 +1,86 @@
 # 新对话提示词（复制下面的内容粘贴到新对话）
 
 > 用法：新建一个对话，把下面代码块里的整段文字发给新对话里的 AI。
-> 如果你希望它**直接开始写代码**，删掉最后一句「先复述……等我确认」即可。
+> 这是**续作/维护**提示词，不是从零读设计文档开工。项目已经实现并上线。
+
+## 主提示词（续作 / 打磨 / 修 bug）
 
 ```text
-你接手一个已经完成设计的网页小游戏项目《物化帝笑传》，现在要把它从文档变成可运行的代码。
+你接手一个已经实现、已上线的网页小游戏项目《物化帝笑传》，继续维护和打磨。不要重做架构，不要重新设计玩法。
 
-【工作目录】/root/workspace/wuhua-dixiao（里面已有 README.md、HANDOFF.md 和 docs/ 下 12 份设计文档；还没有 src/ 代码，也没装依赖）。
+【工作目录】/root/workspace/wuhua-dixiao
 
-【技术栈】Kaplay + TypeScript + Vite，纯前端静态站点；手机横屏触控 + PC 键鼠同一份构建；美术全部用代码生成的扁平矢量（描边几何块+统一色板，无外部图片）；存档用 localStorage（key: cmi.save.v1）。
+【先读这些，不要先改代码】
+1) HANDOFF.md —— 当前状态、目录、关键实现、已知坑、发布与验收记录
+2) README.md —— 运行/操作/验收/已知偏差
+3) src/config/balance.ts —— 全部数值唯一来源
+4) src/app/app.ts + src/app/fsm.ts + src/app/state.ts（运行时编排/状态机/检查点）
+5) src/content/ —— 关卡/Boss/NPC/对白/道具/商品/过场
+6) docs/02-data-contracts.md —— 设计契约唯一事实来源（与其它 docs 冲突以 02 为准）
+需要时再查 docs/10、20、21、30、31、40、41、50、51。
 
-【第一件事：按顺序读文档】
-1) docs/02-data-contracts.md —— 唯一事实来源（数值/schema/事件/存档/扩展）
-2) docs/51-quality-and-delivery.md —— 15 个可验收实现任务 + 测试矩阵
-3) docs/50-engine-architecture.md —— 目录/分层/每帧顺序/输入/音频/存档/双端
-4) docs/10-gameplay-core.md
-5) docs/20-level1-boss.md + docs/21-level2-boss.md
-6) docs/30-npc-dialogue.md + docs/31-cutscene-and-audio.md
-7) docs/40-ui-ux.md + docs/41-motion-responsive.md
-8) docs/01-overview.md
-读文档时不要重新设计机制；文档之间冲突以 02 为准，发现缺口先记下来问我。
+【当前状态】
+- 技术栈：Kaplay 3001 + TypeScript + Vite，纯前端静态站；运行时依赖只有 kaplay。
+- 两关可玩：第一关笑长视线战 + 45s 商店 + 潮夺枪 6s 过场；第二关 6 种攻击 + 巨大化 + 碰鞋 + CP1/CP2。
+- 手机横屏触控 + PC 键鼠；DOM 覆盖层 UI；canvas 只画世界；存档 localStorage key `cmi.save.v1`。
+- `pnpm test` 45 条全绿；`pnpm build` 通过；线上 GitHub Pages 已发布：
+  https://lhy220402.github.io/wuhua-dixiao/
+  仓库：https://github.com/Lhy220402/wuhua-dixiao
+- 失败音效已处理：public/audio/fail.ogg / fail.mp3 / fail.m4a（源文件已降噪、−16 LUFS、mono 48k）。
+- 已知偏差见 HANDOFF.md §8，例如 P3 凝视锁定调成 4.0s、R2/R3 新增 64px 坑、第二关 Boss 名字仍是占位。
 
-【任务：做出可玩的两关】
-1) 工程初始化：kaplay/vite/typescript/vitest，index.html、移动端 viewport、100dvh + 安全区。
-2) 移动手感 + 输入抽象：PC 键鼠 + 触控统一成动作；土狼时间/跳跃缓冲/短跳。
-3) 房间制加载、检查点、即时重试、死亡计数、存档。
-4) 第一关：3 个跳跃房 + 礼堂；笑长双眼激光，0.8s 预警、每 4s 眨眼 1.2s 安全窗、挂牌阴影可躲；暴露读条 2.5s 失败（离开 3× 回落）；掉坑失败。
-5) 45s 后商店出现：10 金币买「子弹枪」；笑长气泡「你这玩意能大四人你知道不」；NPC「潮」冲入夺枪、一枪击毙笑长、把枪抛回主角；获得「子弹枪（潮的馈赠）」；6s 过场可跳过。
-6) 第二关：一屏竞技场，Boss 6 种可躲攻击；受击 -1 心且 -5000 金币；Boss 每 3 次有效命中掉 1 枚 2500；HP≤0 或金币≤0 失败；Boss≤40 血巨大化、子弹刮痧；碰到鞋（192×64 判定）即胜利；失败回阶段检查点；通关显示「未完待续」。
-7) NPC：老吴唱「纱魔罗托」→ 视线读条 ×0.6 / 25s / CD 60s；小明全程无字（符号气泡+肢体）；食菌「非洲怎么可能有香蕉呢…」给一次性香蕉；假生「都这个点了还没死呢」→ 第二关 -1 HP、不可致死、不扣钱。
-8) UI：DOM 覆盖层（HUD/商店/对话/物品栏/暂停/失败/结算），canvas 只画世界；Apple HIG 触控 ≥48–56px、safe-area、对比度、Reduce Motion；Material 动效 100/200/300/400ms + 标准/强调曲线；手机横屏触控 + PC 键鼠。
-9) 音频缺失静默（每 ID 只 warn 一次）；失败音效接口 sfx.fail（用户稍后提供 public/audio/fail.ogg）；`pnpm build` 可静态部署。
+【硬约束】
+- 不新增运行时依赖；开发依赖最多 vitest 等已有项。
+- 无外部图片素材；美术继续用 src/art/ 代码生成扁平矢量，保留资源槽。
+- 固定文案逐字保留：你这玩意能大四人你知道不 / 纱魔罗托 / 非洲怎么可能有香蕉呢… / 都这个点了还没死呢 / 潮的馈赠 / 未完待续；小明任何界面都不能出现他说的话。
+- 数值全部集中在 src/config/balance.ts，禁止散落硬编码；关卡/NPC/Boss 阶段/商品/梗保持数据驱动。
+- 保留 `docs/` 设计文档，不擅自改契约；确需改先说明并更新文档。
+- 手机横屏 + PC 都要能玩；无 WebGL2 显示说明页；无音频文件可全程通关。
 
-【硬约束】不新增运行时依赖；无外部图片素材；固定文案逐字保留；固定文案：你这玩意能大四人你知道不 / 纱魔罗托 / 非洲怎么可能有香蕉呢… / 都这个点了还没死呢 / 潮的馈赠 / 未完待续；小明任何地方都不能出现他说的话；数值全部集中在 src/config/balance.ts；扩展性：关卡/NPC/Boss 阶段/商品/梗都数据驱动。
+【工作方式】
+1. 先读 HANDOFF.md 和对应代码，复述当前实现与你要改的点；不要猜。
+2. 起 `pnpm dev` / 跑 `pnpm test` / `pnpm build`，先复现问题再修。
+3. 每个改动给出可验证证据（单测、Playwright 流程、真机截图、构建产物）。
+4. 不要用“应该可以”当结论；测试失败就继续查。
+5. 发现文档缺口或需要用户信息（例如第二关 Boss 正式名）先问，不要编。
 
-【工作方式】先读文档，然后给我一份「实现计划 + 里程碑拆分（对齐 51 的 15 个任务）」；每个里程碑做完给我可运行方式和简短验收结果（pnpm dev 或构建产物 + 手机/PC 实测），再进下一步。遇到文档缺口或冲突先问我，不要猜。
+【环境提示】
+- 本机 Ubuntu proot 无沙箱后端：bash 用 sandbox_permissions="danger-full-access" 并写一句理由。
+- npm/pnpm 用国内镜像；可联网装开发依赖。
+- Playwright 无头 Chromium 用 SwiftShader 时 Kaplay 的 WebGL2 会 context lost，导致截图 canvas 空白；这是测试环境限制，真机/正常浏览器正常。不要据此误判游戏坏掉。
+- 产出放工作区；给用户的成品/截图复制到 /sdcard/Download/DSH-Go/。
+- GitHub CLI 已在本机登录 Lhy220402；不要把 token 写进文件/提交/聊天。git push 偶尔网络超时，可重试或用 GitHub Git Data API 更新分支。
 
-【环境提示】项目在 /root/workspace/wuhua-dixiao；本机 Ubuntu proot 无沙箱后端，跑 bash 命令用 sandbox_permissions="danger-full-access" 并写一句理由；npm/pnpm 用国内镜像；可联网安装依赖；产出放工作区，给用户的成品复制到 /sdcard/Download/DSH-Go/。
+【当前待办（按用户优先级）】
+A. 第二关 Boss 正式名字（用户给名字后改 content/bosses/boss2.ts 与 HUD 显示；外形已按“学生”实现）。
+B. 其余音效/BGM（用户放入 public/audio/ 同名文件即生效；不要为缺失文件加运行时依赖）。
+C. 可选打磨：失败页死亡数字大动画、商店 60s 后的激光加速、梗图鉴入口、减少动效细节。
+D. 手机横屏完整两关人工回归（重点：触控射击、商店购买、过场跳过、CP2 重试、碰鞋）。
+E. 线上更新：`pnpm build` 后更新 gh-pages；保持 `base: "./"`，否则 GitHub Pages 子路径 404。
 
-【用户还欠的信息】失败音效 fail.ogg（放 public/audio/）、第二关 Boss 名字与外形、物化帝形象（发型/眼镜/校服配色）；先按文档占位推进，收到后替换。
+【验收口径】
+- 手机横屏 + PC 都能完整通关两关；失败会播 sfx.fail（缺失静默）；刷新不丢档；无外部素材也能跑；移动端 60fps。
+- `pnpm typecheck` / `pnpm test` / `pnpm build` 全绿；固定文案逐字未改；小明无台词。
 
-【验收】手机横屏 + PC 都能完整通关两关；失败会播 sfx.fail（缺文件时静默）；刷新不丢档；没有外部素材也能跑；移动端 60fps。
+先复述你读到的当前状态 + 你准备先做哪一项，再开始改代码；每完成一项给我「改了什么 + 怎么验 + 结果」。如果需要我做产品决策（Boss 名字/是否加内容），先问我。
+```
 
-现在开始：先复述你对项目的理解 + 读文档后的实现计划与里程碑，等我确认后再写代码。
+## 只修一个 bug / 只改一处时，把下面这段替换掉主提示词的「当前待办」
+
+```text
+【本次只做一件事】<在这里写具体问题/需求，例如：手机横屏商店购买按钮偶发点不到 / 把第二关 Boss 名字改成「XXX」/ 给第二关加一个阶段检查点提示>
+- 先复现，给出根因，再修；不要顺手重构无关代码。
+- 修完跑 `pnpm typecheck` / `pnpm test` / `pnpm build`，并给我最短复现步骤和验证结果。
+- 不改固定文案、不改数值出处（balance.ts）、不新增运行时依赖。
+```
+
+## 另一个对话只做「发布/部署」时用
+
+```text
+项目：/root/workspace/wuhua-dixiao，已实现并构建。只做 GitHub Pages 发布与线上验证，不改玩法。
+- 先读 HANDOFF.md §10（发布与凭据）与 README.md。
+- `pnpm build`，检查 dist/index.html 使用相对路径；更新 gh-pages 分支。
+- 线上 URL 应为 https://lhy220402.github.io/wuhua-dixiao/ ；用无头浏览器验证标题、开始、HUD、资源无 404（缺失音频除外）。
+- 不要把 token 写进文件/提交；git push 失败可重试或用 GitHub API，不要 force 覆盖错误内容。
+- 完成后给我线上 URL + 验证结果。
 ```
