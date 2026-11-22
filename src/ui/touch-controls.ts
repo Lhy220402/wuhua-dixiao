@@ -13,7 +13,7 @@ export class TouchControls {
   private active = false;
 
   constructor(root: HTMLElement) {
-    this.layer = el("div", { class: "touch-layer", "aria-hidden": "true" });
+    this.layer = el("div", { class: "touch-layer" });
     this.left = el("button", { class: "touch-btn touch-move left", type: "button", "aria-label": "向左" }, ["◀"]);
     this.right = el("button", { class: "touch-btn touch-move right", type: "button", "aria-label": "向右" }, ["▶"]);
     this.jump = el("button", { class: "touch-btn touch-jump", type: "button", "aria-label": "跳跃" }, ["跳"]);
