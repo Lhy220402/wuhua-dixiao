@@ -96,18 +96,22 @@ describe("LaserBoss P1 单眼横扫", () => {
     );
   });
 
-  it("扫满 1.8s 的终点是 ~772（160→800 / 340px/s / 1.8s 三个文档数互斥，锁定当前实现）", () => {
+  it("扫射时长由 行程/速度 推导（≈1.882s），能覆盖到 x=800", () => {
     const boss = makeBoss();
     advanceUntil(boss, () => info(boss).mode === "sweep");
-    advanceUntil(boss, () => info(boss).mode === "recover");
-    const endX = boss.beams[0]!.x;
-    // 1.8s × 340px/s = 612px，到不了 endX=800；状态切换帧不推进，因此差一帧
-    expect(endX).toBeGreaterThan(BALANCE.level1.p1StartX);
-    expect(endX).toBeLessThan(BALANCE.level1.p1EndX);
-    expect(endX).toBeCloseTo(
-      BALANCE.level1.p1StartX + BALANCE.level1.p1Speed * BALANCE.level1.gazeSweepDuration,
-      -1,
+    let frames = 0;
+    while (info(boss).mode === "sweep" && frames < 400) {
+      boss.update(DT, 480);
+      frames++;
+    }
+    // 640/340≈1.882s；状态切换那一帧只结算迁移、不推进光束
+    expect(frames / 120).toBeCloseTo(
+      (BALANCE.level1.p1EndX - BALANCE.level1.p1StartX) / BALANCE.level1.p1Speed,
+      1,
     );
+    const endX = boss.beams[0]!.x;
+    expect(endX).toBeGreaterThan(BALANCE.level1.p1EndX - 6);
+    expect(endX).toBeLessThanOrEqual(BALANCE.level1.p1EndX);
   });
 });
 

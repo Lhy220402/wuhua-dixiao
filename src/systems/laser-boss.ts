@@ -191,6 +191,17 @@ export class LaserBoss {
     this.active = true;
     if (this.pattern.kind === "lock") {
       this.modeTimer = this.pattern.durationMs ? this.pattern.durationMs / 1000 : BALANCE.level1.p3LockHold;
+    } else if (this.pattern.kind === "sweep") {
+      // P1：按「行程 / 速度」推导，保证 160→800 扫满（640/340≈1.882s），
+      // 否则 balance 的 1.8s 只能扫 612px，终点停在 ~772。
+      const startX = this.pattern.startX ?? BALANCE.level1.p1StartX;
+      const endX = this.pattern.endX ?? BALANCE.level1.p1EndX;
+      const speed = this.pattern.speed ?? BALANCE.level1.p1Speed;
+      this.modeTimer = this.pattern.durationMs
+        ? this.pattern.durationMs / 1000
+        : speed > 0
+          ? Math.abs(endX - startX) / speed
+          : BALANCE.level1.gazeSweepDuration;
     } else {
       this.modeTimer = BALANCE.level1.gazeSweepDuration;
     }

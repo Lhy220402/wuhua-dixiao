@@ -116,6 +116,7 @@ export const BALANCE = {
     gazeIdleDuration: 0.4,
     gazeBeamTopOffset: 8,
     gazeSweepPeriod: 3.6,
+    /** P2 交叉的扫射时长；P1 改为按「行程/速度」推导（640/340≈1.882s）以扫满 160→800 */
     gazeSweepDuration: 1.8,
     gazeRecoverDuration: 1.0,
     gazeTelegraphDuration: 0.8,
