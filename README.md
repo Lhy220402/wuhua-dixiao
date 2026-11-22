@@ -1,39 +1,124 @@
-# 物化帝笑传 · 设计文档包
+# 物化帝笑传
 
-一款「iwanna 式」班级梗网页小游戏：精准平台跳跃 + 搞笑演出 + 两关 Boss 战 + NPC 对话，手机和 PC 都能玩。当前版本到第二关通关显示「未完待续」。
+一款「iwanna 式」校园梗网页小游戏：精准平台跳跃 + 搞笑演出 + 两关 Boss 战 + NPC 对话。手机横屏触控与 PC 键鼠共用一份构建；美术全部为代码生成的扁平矢量，无外部图片；存档写入 `localStorage` 的 `cmi.save.v1`。
 
-## 现在有什么
+- 技术栈：**KAPLAY 3001 + TypeScript + Vite**，纯前端静态站点
+- 第一关：3 个跳跃房 + 礼堂笑长视线战（45s 商店、10 金币买枪、潮夺枪 6s 过场）
+- 第二关：一屏竞技场消耗战（6 种可躲攻击、巨大化、碰鞋胜利）
+- 通关第二关显示「**未完待续**」
 
-**这一轮只交设计与开发文档，还没写代码。** 文档共 12 份，v0.1 已完成（2026-11-22），覆盖玩法、关卡、Boss、NPC 对话、过场动画、UI/UX、工程架构和实现计划，确认后即可开工。
+## 快速开始
 
-| 文档 | 内容 |
-|---|---|
-| [docs/01-overview.md](docs/01-overview.md) | 项目总览、两关流程、模块划分、里程碑、风险、待确认事项 |
-| [docs/02-data-contracts.md](docs/02-data-contracts.md) | 全局数值、内容数据 schema、事件、存档、扩展流程（唯一事实来源） |
-| [docs/10-gameplay-core.md](docs/10-gameplay-core.md) | 手感、房间与检查点、重试、金币经济、商店、物品栏、Buff |
-| [docs/20-level1-boss.md](docs/20-level1-boss.md) | 第一关房间编排、笑长视线战、商店与夺枪过场触发 |
-| [docs/21-level2-boss.md](docs/21-level2-boss.md) | 第二关 Boss 攻击模式、双资源、巨大化、踩鞋胜利 |
-| [docs/30-npc-dialogue.md](docs/30-npc-dialogue.md) | 老吴 / 小明 / 食菌 / 假生 的对话与触发 |
-| [docs/31-cutscene-and-audio.md](docs/31-cutscene-and-audio.md) | 夺枪平面动画分镜、失败画面、音效清单 |
-| [docs/40-ui-ux.md](docs/40-ui-ux.md) | 设计 token、全部界面组件、HIG 触控与安全区 |
-| [docs/41-motion-responsive.md](docs/41-motion-responsive.md) | Material 动效曲线与时长、双端布局、触控控件 |
-| [docs/50-engine-architecture.md](docs/50-engine-architecture.md) | Kaplay 工程架构、目录、输入/音频/存档系统 |
-| [docs/51-quality-and-delivery.md](docs/51-quality-and-delivery.md) | 实现任务拆解、测试矩阵、性能与里程碑 |
-| [docs/00-brief.md](docs/00-brief.md) | 团队共用简报（给协作用，可跳过） |
+```bash
+cd /root/workspace/wuhua-dixiao
+pnpm install
+pnpm dev          # http://localhost:5173/
+pnpm build        # 产物在 dist/，可丢到任意静态托管
+pnpm preview      # 本地预览生产构建
+pnpm test         # Vitest 纯逻辑单测
+```
 
-## 一分钟看懂怎么玩
+手机真机：手机与电脑同一局域网，打开 `http://<电脑局域网 IP>:5173/`；横屏游玩。生产构建 `base: "./"`，部署在任意子路径（GitHub Pages / Gitee Pages / Nginx / Netlify）均可。
 
-1. **第一关**：平台跳跃穿过教学楼，礼堂里的「笑长」双眼扫射激光（视线）——暴露 2.5 秒就失败。躲够 45 秒，地图里冒出商店，花 10 金币买「子弹枪」；笑长吐槽「你这玩意能大四人你知道不」，然后 NPC 抢走枪一枪把他带走。你捡到「子弹枪 / 潮的馈赠」。
-2. **第二关**：用子弹枪打 Boss。挨一下掉 1 心、扣 5000 金币，血量或金币扣光就失败。Boss 血到 40% 会巨大化，子弹变成刮痧——去**碰他的鞋**就能赢。
-3. **NPC**：老吴唱歌给增益；小明对着空气自言自语；食菌念叨「非洲怎么可能有香蕉呢…」；假生问「都这个点了还没死呢」然后扣你血。失败播放失败音效（文件待提供）。
+## 操作
 
-## 下一步
+| 动作 | PC | 触控 |
+|---|---|---|
+| 移动 | A / D、← / → | 左下 ◀ ▶ |
+| 跳 / 短跳 | 空格、W、↑、Z、K | 右下「跳」 |
+| 交互 / 购买 | E、F、Enter | 靠近后右下「!」 |
+| 射击（第二关 / 礼堂） | J、X、鼠标左键 | 右下「射」 |
+| 暂停 | Esc / P | HUD 右上「Ⅱ」 |
+| 跳过对话 / 过场 | Enter / 空格（跳过按钮 / 长按对话框） | 点对话框 / 「跳过」 |
 
-1. 你确认玩法/数值/文案/UI 方向，并补上 [01 文档第 7 节](docs/01-overview.md#7-需要你确认提供的信息) 里的信息（失败音效、第二关 Boss 名字与形象、物化帝形象等）。
-2. 开工写代码：先做可跑骨架（双端输入 + 房间 + 存档 + 手感），再做第一关、过场、第二关、打磨。
-3. 代码完成后 `pnpm dev` 手机/PC 都能玩，`pnpm build` 后丢静态托管即可上线。
+## 两关怎么打
 
-## 新对话 / 交接
+1. **第一关**：跳过尖刺与坑，进礼堂。笑长的激光每 4s 眨眼 1.2s；被照会涨暴露条，2.5s 满即失败；离开视线 3× 回落；挂牌下方是阴影安全区。左二房间的老吴唱「纱魔罗托」降低读条增速；三楼的小明只会对着空气说话（通篇无台词）；礼堂右侧 45s 后出现小卖部，10 金币买「子弹枪」，随后潮冲进来夺枪击毙笑长，把枪抛回给你（「潮的馈赠」）。
+2. **第二关**：子弹打 Boss（4 伤 / 0.25s 冷却），每 3 次命中掉 2500 金币；受击 −1 心 −5000 金币；心或金币归零即失败。Boss ≤40 血巨大化，子弹只飘「-0 / 刮痧」，此时去**碰它翘在地上的皮鞋**（192×64 判定）即可赢。失败回本阶段检查点。
+3. **NPC**：食菌给一次性香蕉；假生在第二关入口右侧，交互 −1 HP（不可致死、不扣金币）；老吴增益 25s / 冷却 60s；小明任何界面都不会有台词。
 
-- [HANDOFF.md](HANDOFF.md)：给接手 AI 的交接文档（当前状态、已定决策、阅读顺序、执行计划、环境与验收口径）。
-- [START-PROMPT.md](START-PROMPT.md)：新对话提示词，复制粘贴即用（想让它直接开工就删掉最后一句「等我确认」）。
+## 目录
+
+```
+index.html
+vite.config.ts / vitest.config.ts / tsconfig.json
+public/audio/                 # fail.ogg / fail.mp3 / fail.m4a（已处理）
+src/
+  main.ts                     # 入口：WebGL2 探测 → kaplay → 场景
+  app/                        # fsm / state / app 编排
+  config/                     # balance.ts（唯一数值来源）/ theme / layout
+  core/types.ts               # Vec / Rect / 事件 payload / 工具
+  save/                       # schema / serialize / storage（localStorage + 兜底）
+  systems/                    # input / physics / geom / vision / shop / combat /
+                              # boss / laser-boss / arena-boss / bullets /
+                              # dialogue-runner / cutscene-player / audio / events
+  content/                    # 关卡 / Boss / NPC / 对白 / 道具 / 商品 / 过场 / 音频清单
+  art/                        # 代码生成扁平矢量（玩家 / 笑长 / 学生 Boss / NPC / 瓦片 / FX）
+  ui/                         # HUD / 对话框 / 商店 / 暂停 / 失败 / 结算 / 触控 / 气泡
+  tests/                      # Vitest 纯逻辑单测（45 条）
+docs/                         # 冻结的 v0.1 设计文档（02 为唯一事实来源）
+```
+
+## 验收状态（2026-11-22）
+
+- [x] `pnpm typecheck` / `pnpm build` 通过，`dist/` 静态产物可托管
+- [x] `pnpm test`：8 个测试文件、45 条用例全绿（几何/视线/商店/FSM/存档/Boss/输入映射/房间入口）
+- [x] PC 键鼠：标题 → 第一关 → 商店 → 夺枪过场 → 第二关 → 巨大化 → 碰鞋 → 未完待续（Playwright 逐段驱动验证）
+- [x] 手机横屏渲染 / 触控移动 / 跳跃 / 射击 / 暂停（真机截图验证；渲染正常）
+- [x] 失败：尖刺/掉坑、视线满、HP≤0、金币≤0 均进入失败页；`sfx.fail` 已放入 `public/audio/`
+- [x] 刷新不丢档：`cmi.save.v1`（含 `.bak` 轮换、损坏档 `.bad` 备份、隐私模式内存降级）
+- [x] 无音频环境可全程通关：缺失音频每个 ID 只 `warn` 一次、不阻塞
+- [x] 第二关阶段检查点：CP1/CP2；CP2 重试 HP≥3、金币≥15000、Boss 40、直接巨大化并 1s 后激活鞋
+- [x] 固定文案逐字保留：你这玩意能大四人你知道不 / 纱魔罗托 / 非洲怎么可能有香蕉呢… / 都这个点了还没死呢 / 潮的馈赠 / 未完待续
+- [x] 小明数据层 `lines: []`，气泡只显示「……」；`validateContent()` 会拦截任何小明台词
+
+### 与文档的已知偏差（实现取舍，均有注释/常量）
+
+1. **P3 凝视锁定 4.0s**（文档 20 §3 L1-04 写 1.2s）。原值下 2.5s 暴露读条在中远距离几乎无法打满；调成 4.0s 后「被锁住不跑就会死」成立。数值集中在 `BALANCE.level1.p3LockHold`，可随时改回。
+2. **地板顶 y=512**（02 的礼堂示例写 500、30 写 470，存在跨文档不一致）。实现按 20/21/30 的贴地坐标统一为 512，地板 28px。
+3. **R2/R3 增加少量坑**：20 的网格图地面是满的，但任务要求「掉坑失败」；在不改平台/金币/尖刺主要位置的前提下，把 R2/R3 地面切了两段 64px 缺口。
+4. **失败页主标题用「败了」**（40 §5.8），原因文案用 10 §5.2 的逐字（如「物化帝被笑长看穿了。」）；31 §5.4 的「你又没了」未被采用。
+5. **第二关 Boss 名称仍为占位**「第二关 Boss」/ HUD「BOSS」；形象按用户补充画成学生（校服 + 方框眼镜 + 领带）。物化帝按用户补充画成皇帝（龙袍 + 冕冠 + 圆框眼镜）。
+6. **金币不加千分位**（02/10 明文，如 `15000`），覆盖 40 的 `15,000`。
+7. **音频只交付 fail**：用户提供的 `标准录音 1.mp3` 已做去首尾静音、降噪、EQ、压缩、−16 LUFS 归一，导出 `fail.ogg`（Vorbis）/`fail.mp3`/`fail.m4a` 三格式兜底；其余 17 个逻辑 ID 首版缺失静默。
+8. **死亡数字大动画**未单独做（10 §2.3 的 fullscreen 死亡数字）；失败页直接展示死亡计数，重试流程/计数/存档均为文档语义。
+
+## 音频处理记录
+
+源文件：`标准录音 1.mp3`（3.04s、48kHz 立体声、320kbps、−12.9 LUFS、真峰 −0.5dBTP）。
+
+处理链（ffmpeg）：
+
+```
+silenceremove（去首尾静音）
+→ highpass 70Hz / lowpass 14kHz
+→ afftdn（降噪）
+→ acompressor
+→ loudnorm I=-16 LUFS / TP=-1.5 / LRA=7
+→ 淡入淡出、单声道 48kHz
+```
+
+产物：`public/audio/fail.ogg`（23KB）、`fail.mp3`（27KB）、`fail.m4a`（42KB）。运行时按 `ogg → mp3 → m4a` 顺序兜底；三份全缺时完全静默，每个 ID 只 `console.warn` 一次。
+
+## GitHub Pages 发布
+
+`dist/` 是纯静态资源（`base: "./"`，无后端、无 Service Worker）。发布步骤见下（需要仓库写权限）：
+
+```bash
+pnpm build
+# 把 dist/ 推到 gh-pages 分支，或在仓库 Settings → Pages 选择 GitHub Actions
+```
+
+本机环境已准备 GitHub CLI，授权后可直接创建仓库、推送 `gh-pages` 分支并开启 Pages。最终地址会形如：
+`https://<github-user>.github.io/wuhua-dixiao/`
+
+## 设计文档
+
+`docs/` 下保留 v0.1 设计文档；`docs/02-data-contracts.md` 是数值/事件/存档/schema 的唯一事实来源，`docs/51-quality-and-delivery.md` 是 15 个实现任务与验收矩阵。实现中的取舍见本文「与文档的已知偏差」。
+
+## 还没做 / 后续可加
+
+- 第二关 Boss 正式名字与外形细节（用户确认后替换 `content/bosses/boss2.ts` + `art/bosses.ts`）
+- 其余音效 / BGM（用户提供后直接放进 `public/audio/` 即可，无需改代码）
+- 梗图鉴入口、死亡数字大动画、商店不买 60s 的激光加速（当前只出嘲讽气泡）
+- 真机性能测试记录（目标：手机横屏 60fps / 地板 50fps）

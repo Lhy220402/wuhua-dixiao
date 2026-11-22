@@ -3,3 +3,6 @@ dist/
 .DS_Store
 *.log
 *.zip
+*.mp3.tmp
+.vite/
+coverage/

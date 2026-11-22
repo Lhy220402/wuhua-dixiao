@@ -1,0 +1,25 @@
+{
+  "name": "wuhua-dixiao",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "《物化帝笑传》—— Kaplay + TypeScript + Vite 的两关网页小游戏",
+  "scripts": {
+    "dev": "vite --host 0.0.0.0",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview --host 0.0.0.0",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "kaplay": "3001.0.19"
+  },
+  "devDependencies": {
+    "@types/node": "^24.19.2",
+    "typescript": "^5.9.3",
+    "vite": "^7.3.8",
+    "vitest": "^3.2.7"
+  },
+  "packageManager": "pnpm@12.21.0"
+}
