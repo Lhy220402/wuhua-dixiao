@@ -199,7 +199,7 @@ export class GameApp {
     this.level = LEVEL_BY_ID[this.save.progress.currentLevel === 2 ? "level2" : "level1"]!;
     this.audio = new AudioManager(this.save.settings);
     this.overlays = new Overlays(this.root, canvas);
-    this.hud = new Hud(this.root, () => this.handlePauseButton());
+    this.hud = new Hud(this.root, () => this.handlePauseButton(), () => this.requestFullscreen(false));
     this.shopPanel = new ShopPanel(this.root);
     this.dialogueBox = new DialogueBox(this.root);
     this.touch = new TouchControls(this.root);
@@ -1259,9 +1259,13 @@ export class GameApp {
     this.events.emit("game:cutscene-start", { cutsceneId: def.id });
     this.overlays.setVignette(false);
     this.hud.setVisible(false);
+    this.overlays.showCutsceneSkip(() => this.cutscene.skip());
     this.cutscene.start(def, {
       onStep: (step) => this.onCutsceneStep(step),
-      onEnd: (skipped) => this.endCutscene(skipped, "level1"),
+      onEnd: (skipped) => {
+        this.overlays.hideCutsceneSkip();
+        this.endCutscene(skipped, "level1");
+      },
     });
   }
 
@@ -1275,9 +1279,13 @@ export class GameApp {
     this.audio.playSfx("sfx.phase");
     this.audio.duckBgm(0.35, 200);
     this.events.emit("game:cutscene-start", { cutsceneId: def.id });
+    this.overlays.showCutsceneSkip(() => this.cutscene.skip());
     this.cutscene.start(def, {
       onStep: (step) => this.onCutsceneStep(step),
-      onEnd: (skipped) => this.endGiantCutscene(skipped),
+      onEnd: (skipped) => {
+        this.overlays.hideCutsceneSkip();
+        this.endGiantCutscene(skipped);
+      },
     });
   }
 
@@ -1291,9 +1299,13 @@ export class GameApp {
     this.cutsceneVisual = { chao: false, chaoX: 960, bossDead: false, gunOut: false, text: null };
     this.events.emit("game:boss-defeated", { bossId: "boss2", method: "shoe" });
     this.audio.duckBgm(0.35, 200);
+    this.overlays.showCutsceneSkip(() => this.cutscene.skip());
     this.cutscene.start(def, {
       onStep: (step) => this.onCutsceneStep(step),
-      onEnd: (skipped) => this.endShoeCutscene(skipped),
+      onEnd: (skipped) => {
+        this.overlays.hideCutsceneSkip();
+        this.endShoeCutscene(skipped);
+      },
     });
   }
 
@@ -1557,6 +1569,7 @@ export class GameApp {
     if (this.cutscene.isOpen) {
       this.cutscene.abort();
       this.overlays.hideWorldBubble();
+      this.overlays.hideCutsceneSkip();
     }
     this.run.victory = false;
     this.run.failReason = reason;

@@ -60,6 +60,7 @@ export class Overlays {
   private worldLeft = 0;
   private worldTop = 0;
   private bubbleTimer: number | null = null;
+  private cutsceneSkip: HTMLElement | null = null;
 
   constructor(root: HTMLElement, canvas: HTMLCanvasElement) {
     this.root = root;
@@ -383,6 +384,23 @@ export class Overlays {
     this.worldBubble = null;
   }
 
+  // ---------------- Cutscene skip ----------------
+  showCutsceneSkip(onSkip: () => void): void {
+    this.hideCutsceneSkip();
+    const btn = button("跳过 ▸▸", "btn-secondary btn-small cutscene-skip", onSkip);
+    const layer = el("div", { class: "cutscene-skip-layer" }, [btn]);
+    layer.addEventListener("pointerdown", (ev) => {
+      if (ev.target === layer) onSkip();
+    });
+    this.root.append(layer);
+    this.cutsceneSkip = layer;
+  }
+
+  hideCutsceneSkip(): void {
+    this.cutsceneSkip?.remove();
+    this.cutsceneSkip = null;
+  }
+
   // ---------------- Flash / vignette ----------------
   flash(color: "red" | "white", alpha = 0.3, durationMs = 120): void {
     this.flashLayer.classList.toggle("white", color === "white");
@@ -411,6 +429,7 @@ export class Overlays {
     this.hideSettings();
     this.hideConfirm();
     this.hideWorldBubble();
+    this.hideCutsceneSkip();
   }
 
   get hasModal(): boolean {

@@ -41,14 +41,17 @@ export class Hud {
   private lastExposurePct = -1;
   private lastBuffText = "";
   private onPause: () => void;
+  private onFullscreen: () => void;
+  private fullscreenBtn: HTMLButtonElement;
   private hasGun = false;
   private rootItemLayer: HTMLElement;
   private coinFlashTimer: number | null = null;
   private bumpTimer: number | null = null;
 
-  constructor(root: HTMLElement, onPause: () => void) {
+  constructor(root: HTMLElement, onPause: () => void, onFullscreen: () => void = () => undefined) {
     this.root = root;
     this.onPause = onPause;
+    this.onFullscreen = onFullscreen;
     this.rootItemLayer = el("div", { class: "item-card-layer" });
     this.hud = el("div", { class: "hud" });
     this.heartsBox = el("div", { class: "hud-hearts", "aria-label": "生命" });
@@ -80,7 +83,18 @@ export class Hud {
       ev.stopPropagation();
       this.onPause();
     });
-    const actions = el("div", { class: "hud-actions" }, [this.itemBox, this.pauseBtn]);
+    this.fullscreenBtn = el("button", {
+      class: "hud-pause hud-fullscreen",
+      type: "button",
+      "aria-label": "全屏",
+      text: "⛶",
+    });
+    this.fullscreenBtn.addEventListener("click", (ev) => {
+      ev.preventDefault();
+      ev.stopPropagation();
+      this.onFullscreen();
+    });
+    const actions = el("div", { class: "hud-actions" }, [this.itemBox, this.fullscreenBtn, this.pauseBtn]);
     const left = el("div", { class: "hud-left" }, [
       this.heartsBox,
       this.hpText,

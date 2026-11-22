@@ -1728,3 +1728,91 @@ body.reduce-motion *::after {
 .modal-card .modal-stats {
   flex-wrap: wrap;
 }
+
+/* HUD 全屏按钮（仅触控设备显示） */
+.hud-fullscreen {
+  display: none;
+  font-size: 20px;
+}
+
+@media (any-pointer: coarse) {
+  .hud-fullscreen {
+    display: grid;
+  }
+}
+
+/* 过场跳过层 */
+.cutscene-skip-layer {
+  position: absolute;
+  inset: 0;
+  z-index: 550;
+  pointer-events: auto;
+  background: transparent;
+}
+
+.cutscene-skip {
+  position: absolute;
+  right: calc(var(--safe-r) + 16px);
+  top: calc(var(--safe-t) + 8px);
+  pointer-events: auto;
+  background: rgba(11, 17, 20, 0.55);
+}
+
+/* 横屏短视口：标题卡压缩，保证按钮完整可见 */
+@media (max-height: 430px) {
+  .title-wrap {
+    width: min(520px, calc(100vw - 48px));
+  }
+  .title-deco {
+    display: none;
+  }
+  .title-main {
+    font-size: 28px;
+    letter-spacing: 0.1em;
+  }
+  .title-sub {
+    margin: 4px 0 12px;
+    font-size: var(--fs-12);
+  }
+  .title-actions {
+    gap: 8px;
+    width: min(260px, 100%);
+  }
+  .title-actions .btn {
+    min-height: 44px;
+    font-size: var(--fs-14);
+  }
+  .title-actions .btn-primary {
+    min-height: 48px;
+  }
+  .title-foot {
+    display: none;
+  }
+}
+
+@media (max-height: 430px) {
+  .screen-title {
+    place-items: start center;
+    padding-top: 4px;
+    padding-bottom: 4px;
+  }
+  .title-wrap {
+    padding-top: 0;
+  }
+}
+
+@media (max-height: 430px) {
+  .title-actions {
+    flex-direction: row;
+    width: min(520px, 100%);
+    gap: 8px;
+  }
+  .title-actions .btn {
+    flex: 1 1 0;
+    min-width: 0;
+  }
+  .screen-title {
+    place-items: center;
+    padding-top: 0;
+  }
+}
