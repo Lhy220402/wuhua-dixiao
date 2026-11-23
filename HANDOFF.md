@@ -8,8 +8,8 @@
 
 《物化帝笑传》是一款 iwanna 式校园梗网页小游戏：精准平台跳跃 + 演出 + 两关 Boss + NPC 对话；手机横屏触控与 PC 键鼠共用一份构建；Kaplay + TypeScript + Vite；美术全部为代码生成扁平矢量；当前两关，第二关通关显示「未完待续」。
 
-- **在线试玩**：https://lhy220402.github.io/wuhua-dixiao/
-- **源码仓库**：https://github.com/Lhy220402/wuhua-dixiao
+- **在线试玩**：https://idealismo10.github.io/WUHUADIxiaozhuan/
+- **源码仓库**：https://github.com/idealismo10/WUHUADIxiaozhuan
 - **本地产物**：`dist/`（静态托管）、`/sdcard/Download/DSH-Go/物化帝笑传-web.zip`
 
 ## 1. 当前状态（2026-11-23）
@@ -199,7 +199,7 @@ screenshots/                # 手机实机、音频处理前后频谱
 | 存档 | 刷新继续（金币/房间/道具/设置）；损坏档 `.bad` + toast 重置 |
 | 设置 | 减少动效/音量/控制方案写档并即时生效；暂停菜单正常 |
 | 手机真机 | 横屏渲染/触控移动跳跃/暂停/全屏已截图；线上 GitHub Pages 可开局 |
-| 生产子路径 | `dist/` 放在 `/wuhua-dixiao/` 下静态服务可跑，无 404（除故意缺失的音频） |
+| 生产子路径 | `dist/` 放在 `/WUHUADIxiaozhuan/` 下静态服务可跑，无 404（除故意缺失的音频） |
 | 笑长激光判定 | 单测 + 无头运行时：P1 预警线即落点、P2 真交叉、P3 锁定冻结；锁定站着不动 2.5s 失败、横移不失败 |
 
 > 注意：本机 Playwright/无头 Chromium 默认 SwiftShader 参数下 Kaplay 的 WebGL2 会 context lost，无头截图里 canvas 是空的；这是测试环境限制，**真机手机/正常浏览器渲染正常**。不要据此误判游戏坏掉。
@@ -225,12 +225,13 @@ screenshots/                # 手机实机、音频处理前后频谱
 
 1. **第二关 Boss 名字**（外形已按“学生”实现）。
 2. 其余音效/BGM（可选；缺失静默，不阻塞）。
-3. 是否要 Gitee Pages 镜像（用户给过 Gitee token，本次未使用）。
+3. 是否要 Gitee Pages 镜像：Gitee 新账号 `idealismo10` 下还没有本游戏仓库（只有 `traceless`、`crazy-water-cube`），需要先建仓并给推送凭据。
 4. 是否补「梗图鉴」入口 / 死亡数字大动画 / 更硬核难度。
 
 ## 10. 发布与凭据
 
-- GitHub：`Lhy220402/wuhua-dixiao`；Pages 源为 `gh-pages` 分支，URL `https://lhy220402.github.io/wuhua-dixiao/`。
+- GitHub：`idealismo10/WUHUADIxiaozhuan`；Pages 源为 `gh-pages` 分支，URL `https://idealismo10.github.io/WUHUADIxiaozhuan/`。
+- **2026-11-23 账号/仓库改名**：GitHub 用户名 `Lhy220402` → `idealismo10`，仓库 `wuhua-dixiao` → `WUHUADIxiaozhuan`；旧地址由 GitHub 重定向。Gitee 用户名也改为 `idealismo10`，但本游戏尚未在 Gitee 建仓/发布 Pages 镜像。
 - 本机 `gh` 已登录该账号；**不要把 token 写进任何文件/提交/README**。
 - 用户曾在聊天中贴过 GitHub PAT / Gitee token，建议发布完成后立即轮换/撤销。
 - 更新线上：

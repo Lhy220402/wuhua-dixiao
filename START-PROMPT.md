@@ -23,12 +23,14 @@
 - 技术栈：Kaplay 3001 + TypeScript + Vite，纯前端静态站；运行时依赖只有 kaplay。
 - 两关可玩：第一关笑长视线战 + 45s 商店 + 潮夺枪 6s 过场；第二关 6 种攻击 + 巨大化 + 碰鞋 + CP1/CP2。
 - 手机横屏触控 + PC 键鼠；DOM 覆盖层 UI；canvas 只画世界；存档 localStorage key `cmi.save.v1`。
-- `pnpm test` 50 条全绿；`pnpm build` 通过；线上 GitHub Pages 已发布：
-  https://lhy220402.github.io/wuhua-dixiao/
-  仓库：https://github.com/Lhy220402/wuhua-dixiao
+- `pnpm test` 64 条全绿；`pnpm build` 通过；线上 GitHub Pages 已发布：
+  https://idealismo10.github.io/WUHUADIxiaozhuan/
+  仓库：https://github.com/idealismo10/WUHUADIxiaozhuan
 - 失败音效已处理：public/audio/fail.ogg / fail.mp3 / fail.m4a（源文件已降噪、−16 LUFS、mono 48k）。
 - 已知偏差见 HANDOFF.md §8，例如 P3 凝视锁定调成 4.0s、R2/R3 新增 64px 坑、第二关 Boss 名字仍是占位。
 - 跳跃手感已修：`jumpCutDelay=0.12s`（轻点约 69px / 按住约 103px）；R1/R3 上层平台已横移到可达位置，详见 HANDOFF §6.10。
+- 笑长激光判定已修：P2 双眼真交叉、预警期不再提前漂移、P3 锁定后停住不再追人；P1 时长按行程推导 ≈1.882s 扫满 160→800，详见 HANDOFF §6.11。
+- **发布注意**：GitHub 用户名已改为 `idealismo10`，仓库改为 `WUHUADIxiaozhuan`，Pages 地址是新 URL；推送前先 `git remote -v` 核对。
 
 【硬约束】
 - 不新增运行时依赖；开发依赖最多 vitest 等已有项。
@@ -50,7 +52,7 @@
 - npm/pnpm 用国内镜像；可联网装开发依赖。
 - Playwright 无头 Chromium 用 SwiftShader 时 Kaplay 的 WebGL2 会 context lost，导致截图 canvas 空白；这是测试环境限制，真机/正常浏览器正常。不要据此误判游戏坏掉。
 - 产出放工作区；给用户的成品/截图复制到 /sdcard/Download/DSH-Go/。
-- GitHub CLI 已在本机登录 Lhy220402；不要把 token 写进文件/提交/聊天。git push 偶尔网络超时，可重试或用 GitHub Git Data API 更新分支。
+- GitHub CLI 已在本机登录 `idealismo10`（旧名 Lhy220402 会重定向）；不要把 token 写进文件/提交/聊天。git push 偶尔网络超时，可重试或用 GitHub Git Data API 更新分支。
 - 本地 HEAD 与远端 hash 可能不同（线上最终用 API 更新），新对话先 `git fetch` 或重新 clone，不要直接 force push 覆盖。
 
 【当前待办（按用户优先级）】
@@ -82,7 +84,7 @@ E. 线上更新：`pnpm build` 后更新 gh-pages；保持 `base: "./"`，否则
 项目：/root/workspace/wuhua-dixiao，已实现并构建。只做 GitHub Pages 发布与线上验证，不改玩法。
 - 先读 HANDOFF.md §10（发布与凭据）与 README.md。
 - `pnpm build`，检查 dist/index.html 使用相对路径；更新 gh-pages 分支。
-- 线上 URL 应为 https://lhy220402.github.io/wuhua-dixiao/ ；用无头浏览器验证标题、开始、HUD、资源无 404（缺失音频除外）。
+- 线上 URL 应为 https://idealismo10.github.io/WUHUADIxiaozhuan/ ；用无头浏览器验证标题、开始、HUD、资源无 404（缺失音频除外）。
 - 不要把 token 写进文件/提交；git push 失败可重试或用 GitHub API，不要 force 覆盖错误内容。
 - 完成后给我线上 URL + 验证结果。
 ```

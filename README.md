@@ -6,7 +6,7 @@
 - 第一关：3 个跳跃房 + 礼堂笑长视线战（45s 商店、10 金币买枪、潮夺枪 6s 过场）
 - 第二关：一屏竞技场消耗战（6 种可躲攻击、巨大化、碰鞋胜利）
 - 通关第二关显示「**未完待续**」
-- 在线试玩（GitHub Pages）：**https://lhy220402.github.io/wuhua-dixiao/**
+- 在线试玩（GitHub Pages）：**https://idealismo10.github.io/WUHUADIxiaozhuan/**
 
 ## 快速开始
 
@@ -127,7 +127,9 @@ pnpm build
 # 把 dist/ 推到 gh-pages 分支，或在仓库 Settings → Pages 选择 GitHub Actions
 ```
 
-已发布：**https://lhy220402.github.io/wuhua-dixiao/**（仓库 `Lhy220402/wuhua-dixiao`，`gh-pages` 分支，构建类型为 branch）。后续更新：
+> 2026-11-23 账号/仓库改名：GitHub 用户名 `Lhy220402` → `idealismo10`，仓库 `wuhua-dixiao` → `WUHUADIxiaozhuan`，Pages 地址随之变为新 URL。
+
+已发布：**https://idealismo10.github.io/WUHUADIxiaozhuan/**（仓库 `idealismo10/WUHUADIxiaozhuan`，`gh-pages` 分支，构建类型为 branch）。后续更新：
 
 ```bash
 pnpm build
