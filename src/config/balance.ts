@@ -128,8 +128,9 @@ export const BALANCE = {
     blinkWindow: 1.0,
     blinkPhaseOffset: 0.7,
     patternCycle: ["p1", "p1", "p2", "p3"] as readonly string[],
-    p1StartX: 160,
-    p1EndX: 800,
+    /** P1/P2 扫射覆盖整屏（2026-11-24 修盲区：原 160→800 会漏掉左右边缘） */
+    p1StartX: 0,
+    p1EndX: 960,
     p1Speed: 340,
     p2Speed: 300,
     p3TrackSpeed: 240,

@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { BALANCE } from "../config/balance";
 import { XIAOCHANG } from "../content/bosses/boss1";
+import { LEVEL1 } from "../content/levels/level1";
 import type { BossDef, LaserPatternDef } from "../content/types";
 import { playerRect, type Rect, type Vec } from "../core/types";
 import { LaserBoss } from "../systems/laser-boss";
@@ -44,6 +45,7 @@ interface BossInfo {
   pattern: string;
   beamX: number[];
   haste: number;
+  effectiveHaste: number;
   impatient: boolean;
 }
 
@@ -98,7 +100,7 @@ describe("LaserBoss P1 单眼横扫", () => {
     );
   });
 
-  it("扫射时长由 行程/速度 推导（≈1.882s），能覆盖到 x=800", () => {
+  it("扫射时长由 行程/速度 推导（0→960≈2.82s），能覆盖到 x=960", () => {
     const boss = makeBoss();
     advanceUntil(boss, () => info(boss).mode === "sweep");
     let frames = 0;
@@ -118,7 +120,7 @@ describe("LaserBoss P1 单眼横扫", () => {
 });
 
 describe("LaserBoss P2 双眼交叉", () => {
-  it("两束分别停在 160/800 预警，开火后反向移动并真正交叉", () => {
+  it("两束分别停在 0/960 预警，开火后反向移动并真正交叉", () => {
     const boss = makeBoss();
     advanceUntil(boss, () => info(boss).pattern === "p2" && info(boss).mode === "telegraph");
     tick(boss, BALANCE.level1.gazeTelegraphDuration * 0.5);
@@ -127,8 +129,9 @@ describe("LaserBoss P2 双眼交叉", () => {
     advanceUntil(boss, () => info(boss).mode === "sweep");
     expect(beamXs(boss)).toEqual([BALANCE.level1.p1StartX, BALANCE.level1.p1EndX]);
 
-    tick(boss, 1.2);
-    const moved = Math.round(BALANCE.level1.p2Speed * 1.2);
+    // P2 只扫 1.8s；0→960 的宽度下两束在 1.6s 相遇，1.7s 已交叉
+    tick(boss, 1.7);
+    const moved = Math.round(BALANCE.level1.p2Speed * 1.7);
     expect(beamXs(boss)).toEqual([
       BALANCE.level1.p1StartX + moved,
       BALANCE.level1.p1EndX - moved,
@@ -229,12 +232,48 @@ describe("LaserBoss 商店 60s 不耐烦加速", () => {
     expect(intervals[1]!).toBeLessThan(intervals[0]!);
     expect(intervals[2]!).toBeLessThan(intervals[1]!);
     expect(intervals[intervals.length - 1]!).toBeGreaterThan(2.3);
-    expect(intervals[intervals.length - 1]!).toBeLessThan(2.65);
-    expect(info(boss).haste).toBeCloseTo(4.0 / BALANCE.level1.shopImpatientMinPeriod, 2);
+    expect(intervals[intervals.length - 1]!).toBeLessThan(2.55);
+    expect(info(boss).effectiveHaste).toBeCloseTo(
+      (BALANCE.level1.gazeIdleDuration +
+        BALANCE.level1.gazeTelegraphDuration +
+        (BALANCE.level1.p1EndX - BALANCE.level1.p1StartX) / BALANCE.level1.p1Speed +
+        BALANCE.level1.gazeRecoverDuration) /
+        BALANCE.level1.shopImpatientMinPeriod,
+      2,
+    );
 
     boss.setImpatient(false);
     expect(info(boss).haste).toBe(1);
     expect(info(boss).impatient).toBe(false);
+  });
+});
+
+describe("礼堂视线盲区回归", () => {
+  it("整轮 P1/P1/P2/P3 对地面每个可站立 x 都至少看到一次", () => {
+    const room = LEVEL1.rooms.find((r) => r.id === "l1-r4")!;
+    expect(room.eyes).toHaveLength(2);
+    expect(room.plaques).toHaveLength(3);
+    const def: BossDef = {
+      ...XIAOCHANG,
+      // 关掉眨眼，只测几何覆盖；眨眼只会让可见时间更少，不会制造新的永久盲区
+      blinkPeriodMs: 1_000_000,
+      blinkWindowMs: 0,
+    };
+    const missed: number[] = [];
+    for (let x = 20; x <= 940; x += 20) {
+      const boss = new LaserBoss(def, room.eyes!, room.plaques ?? []);
+      let seen = false;
+      // 一整轮 ≈20.7s（P1/P1/P2/P3），取 22s 覆盖完整轮次
+      for (let t = 0; t < 22 && !seen; t += DT) {
+        boss.update(DT, x);
+        const body = playerRect(x, 512, BALANCE.player.w, BALANCE.player.h);
+        seen = boss.state.beams.some((b) =>
+          gazeFanHitsPlayer(b.eye, b.dir, b.halfAngle, body, room.plaques ?? []),
+        );
+      }
+      if (!seen) missed.push(x);
+    }
+    expect(missed).toEqual([]);
   });
 });
 

@@ -27,7 +27,7 @@
 - 技术栈：Kaplay 3001 + TypeScript + Vite，纯前端静态站；运行时依赖只有 kaplay。
 - 两关可玩：第一关笑长扇形视线战 + 45s 商店 + 潮夺枪 6s 过场；第二关 6 种攻击 + 巨大化 + 碰鞋 + CP1/CP2。
 - 手机横屏触控 + PC 键鼠；DOM 覆盖层 UI；canvas 只画世界；存档 localStorage key `cmi.save.v1`。
-- `pnpm typecheck` 通过；`pnpm test` **13 文件 / 85 条全绿**；`pnpm build` 通过。
+- `pnpm typecheck` 通过；`pnpm test` **13 文件 / 86 条全绿**；`pnpm build` 通过。
 - **线上（GitHub Pages）**：https://idealismo10.github.io/WUHUADIxiaozhuan/
   代码发布提交 `73ce634`（此后仅文档更新）→ gh-pages `4aacb86`，Pages build `built`；
   线上 JS `assets/index-CPABeHCx.js` SHA256 `4784f388…6688d`、CSS `assets/index-D4-97FbF.css` SHA256 `eafa4419…a0cd2`，与本地 dist 逐字节一致。
@@ -35,11 +35,12 @@
 - **Gitee 镜像**：https://gitee.com/idealismo10/WUHUADIxiaozhuan
   第三轮已推送 master + gh-pages `ad5a3fc`；Gitee 上 JS/CSS SHA256 与本地 dist 一致。
   Gitee Pages **仍未开启**：需账号实名认证后，在仓库「服务 → Gitee Pages」选 `gh-pages` / `/` 手动启动；免费版每次推送后要点「更新」。预期地址 https://idealismo10.gitee.io/WUHUADIxiaozhuan/
+- 2026-11-24 修盲区：礼堂挂牌改 48px 窄牌、P1/P2 扩到 0→960，整轮无永久盲区（新增回归测试）。
 - 第三轮已做：物化帝网站图标（svg/ico/png/manifest）；禁用复制/长按误触；两关 Boss 难度调参；失败页死亡数字大动画；商店 60s 后激光加速；标题页「关于」菜单（玩法简介 + GitHub/Gitee 链接）。
 - 失败音效已处理：public/audio/fail.ogg / fail.mp3 / fail.m4a（降噪、−16 LUFS、mono 48k）。
 - 已知偏差见 HANDOFF §8：P3 锁定 4.5s、眨眼窗 1.0s、第二关收招 1.2s/A1 4 发/A2 6 根、R2/R3 64px 坑、第二关 Boss 名字仍是占位。
 - 跳跃手感：`jumpCutDelay=0.12s`（轻点约 69px / 按住约 103px）；R1/R3 上层平台已横移到可达位置。
-- 笑长激光：扇形从瞳孔发出（半角 8°）；P2 双眼真交叉、预警期不漂移、P3 锁定后停住；P1 时长按行程推导 ≈1.882s 扫满 160→800。
+- 笑长激光：扇形从瞳孔发出（半角 8°）；P2 双眼真交叉、预警期不漂移、P3 锁定后停住；P1 范围 0→960（≈2.82s 扫满整屏），整轮无永久盲区。
 - 第二关：A5/A6 独立计时（≈2s/≈3s）、A2 按玩家 1.5s 历史采样、A6 预警时锁落点、转阶段不掉币、CP2 不重复气泡、A1/A2 发数由 params.count 驱动。
 - 继续游戏软锁已修：`planResume()` 处理买枪后刷新（补播过场或直进第二关）。
 - 「关于」菜单内容/URL 只在 `src/content/about.ts`，短屏/触屏自动压缩；Esc/关闭返回标题。

@@ -99,6 +99,7 @@ export class LaserBoss {
       beamX: this.beamX,
       firingEyes: this.firingEyes,
       haste: this.haste,
+      effectiveHaste: Math.min(this.haste, this.maxHaste()),
       impatient: this.impatient,
     };
   }
@@ -166,19 +167,35 @@ export class LaserBoss {
     // 当前轮不打断，从下一轮开始提速；第一轮先记一次 10%（见 startTelegraph）。
   }
 
-  /** 基础攻击轮 ≈ idle + 预警 + 扫射 + 收束（docs/20：3.6~4.08s，取 balance 的 4.0s 基准）。 */
-  private maxHaste(): number {
-    const base =
+  /** 当前模式下一轮的名义时长（用于把加速钳在 2.4s 下限）。 */
+  private baseRoundPeriod(): number {
+    let sweep: number;
+    if (this.pattern.kind === "lock") {
+      sweep = this.pattern.durationMs ? this.pattern.durationMs / 1000 : BALANCE.level1.p3LockHold;
+    } else if (this.pattern.kind === "sweep") {
+      const startX = this.pattern.startX ?? BALANCE.level1.p1StartX;
+      const endX = this.pattern.endX ?? BALANCE.level1.p1EndX;
+      const speed = this.pattern.speed ?? BALANCE.level1.p1Speed;
+      sweep = speed > 0 ? Math.abs(endX - startX) / speed : BALANCE.level1.gazeSweepDuration;
+    } else {
+      sweep = BALANCE.level1.gazeSweepDuration;
+    }
+    return (
       BALANCE.level1.gazeIdleDuration +
       BALANCE.level1.gazeTelegraphDuration +
-      BALANCE.level1.gazeSweepDuration +
-      BALANCE.level1.gazeRecoverDuration;
-    return Math.max(1, base / Math.max(0.1, BALANCE.level1.shopImpatientMinPeriod));
+      sweep +
+      BALANCE.level1.gazeRecoverDuration
+    );
+  }
+
+  /** 当前模式允许的最大加速；保证任何一轮都不短于 shopImpatientMinPeriod。 */
+  private maxHaste(): number {
+    return Math.max(1, this.baseRoundPeriod() / Math.max(0.1, BALANCE.level1.shopImpatientMinPeriod));
   }
 
   update(dt: number, playerX: number): void {
     if (this.frozen) return;
-    const step = dt * this.haste;
+    const step = dt * Math.min(this.haste, this.maxHaste());
     this.blinkClock += step;
     if (this.blinkRemain > 0) {
       this.blinkRemain = Math.max(0, this.blinkRemain - step);
@@ -224,7 +241,8 @@ export class LaserBoss {
 
   private startTelegraph(playerX: number): void {
     if (this.impatient) {
-      this.haste = Math.min(this.maxHaste(), this.haste / (1 - BALANCE.level1.shopImpatientAccel));
+      // 每轮 +10% 速度；具体封顶在 update() 里按当前模式钳制到 2.4s 下限
+      this.haste = Math.min(4, this.haste / (1 - BALANCE.level1.shopImpatientAccel));
     }
     this.mode = "telegraph";
     this.modeTimer = BALANCE.level1.gazeTelegraphDuration;
