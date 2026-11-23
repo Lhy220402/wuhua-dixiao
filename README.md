@@ -96,6 +96,7 @@ docs/                         # 冻结的 v0.1 设计文档（02 为唯一事实
 - **二轮审计修复**：A5/A6 独立计时且保留帧超期量（恢复 ≈2s/≈3s，同帧双到时 A6 顺延 0.35s）；A5 补预警音；转阶段不掉币；`run.giant` 延后到 1.2s 置位；CP2 重试不再重复鞋气泡；香蕉皮底层去抖；A2 站桩落点铺开；`game:retry` 按 bossPhase 推导 cp1/cp2。
 - **继续游戏软锁修复**：买枪过场中 / 通关前刷新不再卡死——`planResume()` 用 `npcFlags.l1_cleared` 区分 0.7s 结算窗口：补播夺枪过场，或已结算时直接进第二关并补 15000。
 - 测试：新增 `arena-boss.test.ts`、`resume.test.ts` 与扇形视线断言；`pnpm test` 81 条全绿。
+- **已发布（2026-11-23 晚）**：master `2416500` → gh-pages `b531213`，线上 <https://idealismo10.github.io/WUHUADIxiaozhuan/> 入口 JS `index-CdlTiSjT.js` 的 SHA256 与本地 `dist` 逐字节一致；Playwright 线上验证标题/开始/第一关 HUD/多指触控/暂停恢复通过，0 pageerror、0 非音频 404（音频 404 为故意缺失）。
 
 ### 与文档的已知偏差（实现取舍，均有注释/常量）
 
@@ -141,7 +142,7 @@ pnpm build
 
 > 2026-11-23 账号/仓库改名：GitHub 用户名 `Lhy220402` → `idealismo10`，仓库 `wuhua-dixiao` → `WUHUADIxiaozhuan`，Pages 地址随之变为新 URL。
 
-已发布：**https://idealismo10.github.io/WUHUADIxiaozhuan/**（仓库 `idealismo10/WUHUADIxiaozhuan`，`gh-pages` 分支，构建类型为 branch；2026-11-23 已更新到激光修复版，线上 JS 与本地 `dist` 逐字节一致）。后续更新：
+已发布：**https://idealismo10.github.io/WUHUADIxiaozhuan/**（仓库 `idealismo10/WUHUADIxiaozhuan`，`gh-pages` 分支，构建类型为 branch；2026-11-23 晚已更新到扇形视线/夺枪动画/Boss 审计修复/移动端版，gh-pages `b531213`，线上 JS `index-CdlTiSjT.js` 与本地 `dist` 逐字节一致）。后续更新：
 
 ```bash
 pnpm build

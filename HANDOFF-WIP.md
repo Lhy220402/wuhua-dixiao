@@ -1,5 +1,7 @@
 # HANDOFF-WIP · 2026-11-23 晚（交接给新对话）
 
+> ✅ **已收尾发布（2026-11-23 晚）**：本文件描述的全部改动已提交 master `2416500`、发布 gh-pages `b531213`，线上 `index-CdlTiSjT.js` 与本地 `dist` 一致。下面是**发布前的历史快照**，仅作记录；当前状态请看 `HANDOFF.md` / `README.md`。
+
 > 这是一份**进行中**的交接，不是最终验收。新对话先读本文件，再按需读 `HANDOFF.md` / `README.md` / `docs/02`。
 > 工作目录：`/root/workspace/wuhua-dixiao`
 > 线上地址：https://idealismo10.github.io/WUHUADIxiaozhuan/
