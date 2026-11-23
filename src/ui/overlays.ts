@@ -99,7 +99,7 @@ export class Overlays {
     const start = button("开始", "btn-primary", callbacks.onStart);
     const cont = button("继续", "btn-secondary", callbacks.onContinue, { disabled: !hasSave });
     const settings = button("设置", "btn-secondary", callbacks.onSettings);
-    const about = button("关于", "btn-ghost", callbacks.onAbout);
+    const about = button("关于", "btn-secondary", callbacks.onAbout);
     const foot =
       "v0.1 · A/D 移动 · 空格跳 · E 交互 · J 射击 · Esc 暂停";
     const screen = el("div", { class: "screen screen-title" }, [
