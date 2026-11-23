@@ -129,7 +129,7 @@ pnpm build
 
 > 2026-11-23 账号/仓库改名：GitHub 用户名 `Lhy220402` → `idealismo10`，仓库 `wuhua-dixiao` → `WUHUADIxiaozhuan`，Pages 地址随之变为新 URL。
 
-已发布：**https://idealismo10.github.io/WUHUADIxiaozhuan/**（仓库 `idealismo10/WUHUADIxiaozhuan`，`gh-pages` 分支，构建类型为 branch）。后续更新：
+已发布：**https://idealismo10.github.io/WUHUADIxiaozhuan/**（仓库 `idealismo10/WUHUADIxiaozhuan`，`gh-pages` 分支，构建类型为 branch；2026-11-23 已更新到激光修复版，线上 JS 与本地 `dist` 逐字节一致）。后续更新：
 
 ```bash
 pnpm build

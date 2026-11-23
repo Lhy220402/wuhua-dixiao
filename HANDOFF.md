@@ -20,7 +20,7 @@
 | 依赖 | 仅 `kaplay`（运行时）+ `vite` / `typescript` / `vitest`（开发） |
 | 测试 | `pnpm test` → **10 个文件 / 64 条全绿**（含激光判定回归） |
 | 构建 | `pnpm build` 通过；gzip 约 114KB JS + 6KB CSS |
-| 上线 | GitHub Pages 已发布（`gh-pages` 分支），线上标题/开局/渲染已验证 |
+| 上线 | **2026-11-23 已发布到改名后的仓库**：`idealismo10/WUHUADIxiaozhuan`，Pages 源 `gh-pages`（f8c50af），线上标题/开局/HUD/资源已验证 |
 | 手机真机 | 横屏渲染、触控移动/跳跃、暂停、全屏按钮已验证；完整两关建议人工复跑 |
 | 失败音效 | 用户提供的 mp3 已降噪/转码为 `fail.ogg` + mp3 + m4a；`sfx.fail` 已实际加载 |
 | 待补 | 第二关 Boss 正式名；其余 17 个音效/BGM；少量打磨项见 §8 |
@@ -201,6 +201,7 @@ screenshots/                # 手机实机、音频处理前后频谱
 | 手机真机 | 横屏渲染/触控移动跳跃/暂停/全屏已截图；线上 GitHub Pages 可开局 |
 | 生产子路径 | `dist/` 放在 `/WUHUADIxiaozhuan/` 下静态服务可跑，无 404（除故意缺失的音频） |
 | 笑长激光判定 | 单测 + 无头运行时：P1 预警线即落点、P2 真交叉、P3 锁定冻结；锁定站着不动 2.5s 失败、横移不失败 |
+| 线上发布（改名后） | 2026-11-23：master `9dd18ee`、gh-pages `f8c50af`；线上 JS SHA256 与本地 `dist` 逐字节一致；点击「开始」进入第一关 HUD；除故意缺失的音频外无 404 |
 
 > 注意：本机 Playwright/无头 Chromium 默认 SwiftShader 参数下 Kaplay 的 WebGL2 会 context lost，无头截图里 canvas 是空的；这是测试环境限制，**真机手机/正常浏览器渲染正常**。不要据此误判游戏坏掉。
 > 纯逻辑/运行时验证可用 `--use-gl=angle --use-angle=swiftshader-webgl --enable-unsafe-swiftshader --ignore-gpu-blocklist` 启动 Chromium：WebGL2 可用、游戏循环可跑、`window.__CMI__.debugState()` 可取状态；截图仍可能是空白 canvas（context lost），不要以截图为唯一证据。
@@ -232,6 +233,7 @@ screenshots/                # 手机实机、音频处理前后频谱
 
 - GitHub：`idealismo10/WUHUADIxiaozhuan`；Pages 源为 `gh-pages` 分支，URL `https://idealismo10.github.io/WUHUADIxiaozhuan/`。
 - **2026-11-23 账号/仓库改名**：GitHub 用户名 `Lhy220402` → `idealismo10`，仓库 `wuhua-dixiao` → `WUHUADIxiaozhuan`；旧地址由 GitHub 重定向。Gitee 用户名也改为 `idealismo10`，但本游戏尚未在 Gitee 建仓/发布 Pages 镜像。
+- **发布记录（2026-11-23）**：`pnpm build` 后把 `dist/` 覆盖到 `gh-pages`（commit `f8c50af`），master 已推送（含激光修复与本文档更新）；线上 `assets/index-glJx25Xp.js` 的 SHA256 与本地 `dist` 完全一致。`base: "./"` 未改。
 - 本机 `gh` 已登录该账号；**不要把 token 写进任何文件/提交/README**。
 - 用户曾在聊天中贴过 GitHub PAT / Gitee token，建议发布完成后立即轮换/撤销。
 - 更新线上：
