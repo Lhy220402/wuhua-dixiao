@@ -167,7 +167,8 @@ pnpm build
 ## Gitee 镜像（2026-11-23 晚）
 
 - 仓库：**https://gitee.com/idealismo10/WUHUADIxiaozhuan**（公开）
-- Gitee 镜像仍是 2026-11-23 第二轮的 `gh-pages b531213`；本轮（`4aacb86`）**尚未推送 Gitee**（本机无持久凭据，需要一次性 token 才能推）。
+- **2026-11-23 晚第三轮已推送**：`master`（源码/文档）与 `gh-pages`（`ad5a3fc`）；Gitee 上 `index-CPABeHCx.js` / `index-D4-97FbF.css` 的 SHA256 与本地 `dist` 逐字节一致（`4784f388…` / `eafa4419…`）。
+- Gitee `master` 的 commit hash 以仓库页为准（内容与 GitHub 第三轮一致；本轮推送 token 属于一次性凭据，建议轮换）。
 - **Pages 服务尚未开启**：Gitee Pages 需要账号完成实名认证，然后在仓库「服务 → Gitee Pages」选择分支 `gh-pages`、目录 `/` 手动启动；免费版每次推送后要在设置页点「更新」才生效（无自动部署）。Gitee OpenAPI 没有 Pages 端点（`/pages` 返回 405/404），无法用脚本开启。
 - 开启后地址预期为 `https://idealismo10.gitee.io/WUHUADIxiaozhuan/`。
 - 本机未配置持久凭据；**不要把 token 写进文件/提交/文档**。
