@@ -2051,53 +2051,6 @@ body.reduce-motion *::after {
   .modal-hint {
     margin-top: 8px;
   }
-  .about-card {
-    max-height: calc(100dvh - 16px);
-    padding: 8px 12px;
-  }
-  .about-kicker,
-  .about-sub,
-  .about-footer,
-  .about-card .modal-hint {
-    display: none;
-  }
-  .about-title {
-    font-size: var(--fs-20);
-  }
-  .about-intro {
-    margin-bottom: 4px;
-    font-size: 11px;
-    line-height: 1.45;
-  }
-  .about-list {
-    margin-bottom: 6px;
-    padding-left: 1em;
-    font-size: 11px;
-    line-height: 1.45;
-  }
-  .about-links {
-    flex-wrap: nowrap;
-    gap: 8px;
-    margin-bottom: 6px;
-  }
-  .about-link {
-    flex: 1 1 0;
-    min-height: 40px;
-    padding: 4px 8px;
-  }
-  .about-link-label {
-    font-size: var(--fs-12);
-  }
-  .about-url {
-    display: none;
-  }
-  .about-actions {
-    margin-top: 0;
-    justify-content: flex-end;
-  }
-  .about-actions .btn {
-    min-height: 40px;
-  }
   .stamp {
     width: 56px;
     height: 56px;
@@ -2164,6 +2117,57 @@ body.reduce-motion *::after {
     min-height: 44px;
   }
 }
+/* 关于弹层在手机横屏/窗口高度较小时也压缩为一屏（部分 WebView 的 CSS 高度能到 585） */
+@media (max-height: 620px) {
+  .about-card {
+    max-height: calc(100dvh - 16px);
+    padding: 8px 12px;
+  }
+  .about-kicker,
+  .about-sub,
+  .about-footer,
+  .about-card .modal-hint {
+    display: none;
+  }
+  .about-title {
+    font-size: var(--fs-20);
+  }
+  .about-intro {
+    margin-bottom: 4px;
+    font-size: 11px;
+    line-height: 1.45;
+  }
+  .about-list {
+    margin-bottom: 6px;
+    padding-left: 1em;
+    font-size: 11px;
+    line-height: 1.45;
+  }
+  .about-links {
+    flex-wrap: nowrap;
+    gap: 8px;
+    margin-bottom: 6px;
+  }
+  .about-link {
+    flex: 1 1 0;
+    min-height: 40px;
+    padding: 4px 8px;
+  }
+  .about-link-label {
+    font-size: var(--fs-12);
+  }
+  .about-url {
+    display: none;
+  }
+  .about-actions {
+    margin-top: 0;
+    justify-content: flex-end;
+  }
+  .about-actions .btn {
+    min-height: 40px;
+  }
+}
+
 
 /* 窄屏横屏（<720px 宽）时收窄顶部中央血条，避免压到左右 HUD。 */
 @media (max-width: 720px) {
