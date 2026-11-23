@@ -1,4 +1,5 @@
 import type { LevelDef } from "../content/types";
+import type { AboutContent } from "../content/about";
 import type { SaveSettings } from "../save/schema";
 import { BALANCE } from "../config/balance";
 import { formatTime } from "../core/types";
@@ -8,6 +9,7 @@ export interface TitleCallbacks {
   onStart: () => void;
   onContinue: () => void;
   onSettings: () => void;
+  onAbout: () => void;
 }
 
 export interface PauseCallbacks {
@@ -52,6 +54,7 @@ export class Overlays {
   private tbc: HTMLElement | null = null;
   private settings: HTMLElement | null = null;
   private confirmModal: HTMLElement | null = null;
+  private about: HTMLElement | null = null;
   private toastLayer: HTMLElement;
   private worldLayer: HTMLElement;
   private worldBubble: HTMLElement | null = null;
@@ -96,6 +99,7 @@ export class Overlays {
     const start = button("开始", "btn-primary", callbacks.onStart);
     const cont = button("继续", "btn-secondary", callbacks.onContinue, { disabled: !hasSave });
     const settings = button("设置", "btn-secondary", callbacks.onSettings);
+    const about = button("关于", "btn-ghost", callbacks.onAbout);
     const foot =
       "v0.1 · A/D 移动 · 空格跳 · E 交互 · J 射击 · Esc 暂停";
     const screen = el("div", { class: "screen screen-title" }, [
@@ -103,7 +107,7 @@ export class Overlays {
         el("div", { class: "title-deco" }),
         el("h1", { class: "title-main", text: "物化帝笑传" }),
         el("p", { class: "title-sub", text: "物化帝 · 校园篇" }),
-        el("div", { class: "title-actions" }, [start, cont, settings]),
+        el("div", { class: "title-actions" }, [start, cont, settings, about]),
         el("p", { class: "title-foot", text: foot }),
       ]),
     ]);
@@ -115,6 +119,54 @@ export class Overlays {
   hideTitle(): void {
     this.title?.remove();
     this.title = null;
+  }
+
+  // ---------------- About ----------------
+  showAbout(content: AboutContent, onClose?: () => void): void {
+    this.hideAbout();
+    const close = button("关闭", "btn-secondary", () => {
+      this.hideAbout();
+      onClose?.();
+    });
+    const links = content.links.map((link) =>
+      el(
+        "a",
+        {
+          class: "btn btn-secondary about-link",
+          href: link.url,
+          target: "_blank",
+          rel: "noopener noreferrer",
+        },
+        [
+          el("span", { class: "about-link-label", text: `${link.label} ↗` }),
+          el("span", { class: "about-url", text: link.note }),
+        ],
+      ),
+    );
+    const card = el("div", { class: "modal-card about-card" }, [
+      el("p", { class: "about-kicker", text: content.kicker }),
+      el("h2", { class: "about-title", text: content.title }),
+      el("p", { class: "about-sub", text: content.subtitle }),
+      el("p", { class: "about-intro", text: content.intro }),
+      el("ul", { class: "about-list" }, content.bullets.map((text) => el("li", { text }))),
+      el("div", { class: "about-links" }, links),
+      el("div", { class: "about-actions" }, [close]),
+      el("p", { class: "modal-hint", text: "Esc 关闭" }),
+      el("p", { class: "about-footer", text: content.footer }),
+    ]);
+    const modal = el("div", { class: "modal-scrim" }, [card]);
+    this.root.append(modal);
+    this.about = modal;
+    close.focus({ preventScroll: true });
+  }
+
+  get isAboutOpen(): boolean {
+    return this.about !== null;
+  }
+
+  hideAbout(): void {
+    this.about?.remove();
+    this.about = null;
   }
 
   // ---------------- Level Intro ----------------
@@ -476,6 +528,7 @@ export class Overlays {
     this.hideTbc();
     this.hideSettings();
     this.hideConfirm();
+    this.hideAbout();
     this.hideWorldBubble();
     this.hideCutsceneSkip();
   }

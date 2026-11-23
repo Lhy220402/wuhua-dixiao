@@ -1,14 +1,7 @@
 import type { KAPLAYCtx } from "kaplay";
 import { BALANCE } from "../config/balance";
-import {
-  BOSS_BY_ID,
-  CONTENT,
-  LEVEL_BY_ID,
-  NPC_BY_ID,
-  getDialogue,
-  getItem,
-  validateContent,
-} from "../content";
+import { BOSS_BY_ID, CONTENT, LEVEL_BY_ID, NPC_BY_ID, getDialogue, getItem, validateContent } from "../content";
+import { ABOUT } from "../content/about";
 import type { BossDef, DialogueDef, ItemDef, LevelDef, NpcDef, RoomDef } from "../content/types";
 import {
   clamp,
@@ -301,6 +294,11 @@ export class GameApp {
       this.overlays.updateWorldRect(this.canvas);
     }
 
+    // 关于弹层：Esc 关闭（触屏用「关闭」按钮）；标题处于冻结状态，不会误触开始
+    if (this.overlays.isAboutOpen && this.input.pressed("pause")) {
+      this.overlays.hideAbout();
+    }
+
     switch (this.fsm.state) {
       case "LevelIntro":
         this.introRemaining -= dt;
@@ -395,6 +393,7 @@ export class GameApp {
       onStart: () => this.newGame(),
       onContinue: () => this.continueGame(),
       onSettings: () => this.openSettings("title"),
+      onAbout: () => this.openAbout(),
     });
     if (this.save.settings.controlScheme === "touch" || this.save.settings.controlScheme === "auto") {
       this.touch.setActive(this.touch.hasTouch());
@@ -1868,8 +1867,11 @@ export class GameApp {
   // 设置
   // ============================================================
 
-  private openSettings(context: SettingsContext): void {
-    this.settingsContext = context;
+  private openAbout(): void {
+    this.overlays.showAbout(ABOUT);
+  }
+
+  private openSettings(context: SettingsContext): void {    this.settingsContext = context;
     this.overlays.showSettings(
       this.save.settings,
       (next) => {

@@ -21,7 +21,7 @@
 |---|---|
 | 代码实现 | **已完成**，两关可玩，`src/` 约 40 个 TS/文件 |
 | 依赖 | 仅 `kaplay`（运行时）+ `vite` / `typescript` / `vitest`（开发） |
-| 测试 | `pnpm test` → **12 个文件 / 83 条全绿**（含扇形视线、Boss 战、夺枪过场、继续游戏软锁、商店不耐烦加速回归） |
+| 测试 | `pnpm test` → **13 个文件 / 85 条全绿**（含扇形视线、Boss 战、夺枪过场、继续游戏软锁、商店不耐烦加速、关于内容回归） |
 | 构建 | `pnpm build` 通过；gzip 约 117.6KB JS + 6.3KB CSS |
 | 上线 | **2026-11-23 晚已发布第二轮**：`idealismo10/WUHUADIxiaozhuan`，Pages 源 `gh-pages`（`b531213`），线上 JS `index-CdlTiSjT.js` 与本地 `dist` 逐字节一致；线上标题/开始/第一关 HUD/多指触控/暂停恢复已验证 |
 | 手机真机 | 横屏渲染、触控移动/跳跃、暂停、全屏按钮已验证；完整两关建议人工复跑 |
@@ -59,7 +59,7 @@
 cd /root/workspace/wuhua-dixiao
 pnpm install        # 已装过可跳过；pnpm 12，已配置 esbuild 构建白名单
 pnpm dev            # http://localhost:5173/ ，手机同局域网用 http://<IP>:5173/
-pnpm test           # Vitest 纯逻辑单测（83 条）
+pnpm test           # Vitest 纯逻辑单测（85 条）
 pnpm typecheck      # tsc --noEmit
 pnpm build          # dist/，base: "./"，可子路径托管
 pnpm preview        # 预览生产构建
@@ -105,10 +105,11 @@ src/
     levels/level2.ts        # 竞技场、讲台、Boss 受击盒、鞋
     bosses/                 # 笑长 / 学生 Boss 数据
     npcs.ts / dialogue.ts   # 四 NPC + 逐字台词（小明 lines: []）
+    about.ts                # 「关于」玩法简介 + GitHub/Gitee 仓库链接
     items.ts / shops.ts / buffs.ts / memes.ts / cutscenes.ts / audio-manifest.ts
   art/                      # 代码生成扁平矢量：玩家/笑长/Boss2/NPC/瓦片/物品/FX
   ui/                       # HUD / 对话 / 商店 / 过场跳过 / 标题/暂停/失败/结算/TBC / 触控
-  tests/                    # 12 个 vitest 文件，83 条
+  tests/                    # 13 个 vitest 文件，85 条
 docs/                       # v0.1 设计文档（冻结）
 screenshots/                # 手机实机、音频处理前后频谱
 ```
@@ -176,6 +177,7 @@ screenshots/                # 手机实机、音频处理前后频谱
 - `#ui-root` 覆盖层；`#stage` 内 canvas；`world-layer` 按 canvas rect 缩放用于世界气泡。
 - HUD 事件驱动更新；对话/商店/暂停/失败/结算/TBC 都是 DOM。
 - 过场有全屏透明 skip 层 + 右上「跳过 ▸▸」按钮，触控可用。
+- 标题页「关于」弹层：玩法简介 + GitHub/Gitee 外链；文案/URL 在 `src/content/about.ts`，`target="_blank" rel="noopener noreferrer"`；Esc/关闭返回标题。`hideAll()` 会一并清掉。
 - 减少动效：`prefers-reduced-motion` + `body.reduce-motion`，设置写存档。
 
 ### 6.10 跳跃手感（2026-11-23 修复）
@@ -210,14 +212,15 @@ screenshots/                # 手机实机、音频处理前后频谱
 - **提高 Boss 难度**（用户选「两关都加、中等偏上」）：第一关 `blinkWindow` 1.2→1.0s、`p3LockHold` 4.0→4.5s；第二关 `attackGap` 1.6→1.2s、`a1.count` 3→4、`a2.count` 5→6。全部在 `balance.ts`，docs/02/20/21 已同步；`src/tests/laser-boss.test.ts` +2 条、`arena-boss.test.ts` +1 条。
 - **失败页死亡数字大动画**：`Overlays.showFail` 接收 `deaths`，卡片顶部渲染 `.death-big-num`（0→N 滚动 480ms + CSS 620ms 放大回弹）+ 「死亡次数」；`prefers-reduced-motion` / `body.reduce-motion` 时直出终值；`hideFail` 取消 rAF。
 - **商店 60s 后激光加速**：`LaserBoss.setImpatient()` 在礼堂商店生成且 60s 未购买后，每轮攻击开始时 `haste /= 0.9`，封顶 `4.0/2.4≈1.667`；状态机 dt 按 haste 缩放（预警/扫射/眨眼同步加快）。`app.isShopImpatient()` 每帧驱动；买枪/过场 `reset()` 清空。
-- 验证：`pnpm typecheck` 通过；`pnpm test` 83/83；Playwright 全流程（L1→夺枪过场→L2→碰鞋→未完待续）0 pageerror；失败页 1280×720 / 844×390 截图正常；手机实机横屏标题/开场/触控/失败/重试已验证。
+- **「关于」菜单**：标题页新增「关于」按钮（四枚按钮之一）；弹层含 3 条玩法简介与 GitHub / Gitee 仓库链接（新标签打开），UrL 仅在 `content/about.ts`；新增 `tests/about.test.ts` 2 条。
+- 验证：`pnpm typecheck` 通过；`pnpm test` 85/85；Playwright 全流程（L1→夺枪过场→L2→碰鞋→未完待续）0 pageerror；失败页 1280×720 / 844×390 截图正常；手机实机横屏标题/开场/触控/失败/重试已验证。
 
 ## 7. 验收记录（已跑）
 
 | 项 | 结果 |
 |---|---|
 | `pnpm typecheck` | 通过 |
-| `pnpm test` | 83/83 通过（12 文件，约 2s） |
+| `pnpm test` | 85/85 通过（13 文件，约 2s） |
 | `pnpm build` | 通过，dist gzip ≈ 117.6KB JS + 6.3KB CSS |
 | PC 全流程 | 标题→第一关→商店→买枪→过场跳过→结算→第二关→巨大化→碰鞋→TBC，全通 |
 | 失败 | 尖刺/掉坑、视线满、HP≤0、金币≤0；失败页与 `sfx.fail` 正常 |
@@ -227,10 +230,11 @@ screenshots/                # 手机实机、音频处理前后频谱
 | 手机真机 | 横屏渲染/触控移动跳跃/暂停/全屏已截图；线上 GitHub Pages 可开局 |
 | 生产子路径 | `dist/` 放在 `/WUHUADIxiaozhuan/` 下静态服务可跑，无 404（除故意缺失的音频） |
 | 笑长激光判定 | 单测 + 无头运行时：P1 预警线即落点、P2 真交叉、P3 锁定冻结；锁定站着不动 2.5s 失败、横移不失败 |
-| 第三轮难度调参 | 单测：A1 发数=4、A2 落点=6、LaserBoss 每轮提速 10% 且 2.4s 封顶、取消后恢复常速；`pnpm test` 83/83 |
+| 第三轮难度调参 | 单测：A1 发数=4、A2 落点=6、LaserBoss 每轮提速 10% 且 2.4s 封顶、取消后恢复常速；`pnpm test` 85/85 |
 | 失败页死亡数字 | 无头运行时：`.death-big-num` 从 0 滚到 1、620ms 动画、减少动效可直出；844×390 卡片不溢出 |
 | 商店激光加速 | 无头运行时：`shopTimer=61` 进入 R4 后 `laser.debug.haste=1.111`、`impatient=true` |
 | 网站图标 / 防误触 | 图标 6 个资源 200、manifest 解析正确；`copy/cut/contextmenu/selectstart/dragstart/Ctrl+C` 全部 defaultPrevented、选中文本为空 |
+| 关于菜单 | Playwright：标题页 4 枚按钮、「关于」弹层 3 条简介、GitHub/Gitee href/target/rel 正确、Esc 关闭、844×390 卡片不溢出；单测 2 条 |
 | 线上发布（第一轮，改名后） | 2026-11-23：master `9dd18ee`、gh-pages `f8c50af`；线上 JS SHA256 与本地 `dist` 逐字节一致；点击「开始」进入第一关 HUD；除故意缺失的音频外无 404 |
 | 线上发布（第二轮，WIP 收尾） | 2026-11-23：master `2416500`、gh-pages `b531213`；Pages build `built`；线上 JS `index-CdlTiSjT.js` SHA256 `de3bac…` 与本地 `dist` 逐字节一致；Playwright 线上：标题「物化帝笑传」/「开始」→第一关 HUD、右+跳多指、按住键时暂停再恢复不粘键全部通过；0 pageerror、0 非音频 404（9 个音频 404 为故意缺失：bgm.level1 / sfx.land / sfx.jump） |
 | 扇形视线 | 单测 + 无头运行时：从瞳孔发出 19 条采样、半角 8°、挂牌斜向遮挡；锁定站桩 2.5s → `Fail/gaze`，锁定后横移暴露 0 |
@@ -315,6 +319,7 @@ screenshots/                # 手机实机、音频处理前后频谱
 - [ ] 夺枪过场：潮冲向玩家、枪响曳光、笑长连椅倒地、枪抛回手里；触屏可跳过
 - [ ] 手机横屏：BOSS 血条不压金币、射击/跳跃/移动多指同时按、减少动效关震屏
 - [ ] 网站图标：浏览器标签/主屏图标为物化帝，manifest 200；长按 HUD/标题不弹系统菜单、Ctrl+C 无选中
+- [ ] 关于：标题页可打开，玩法简介与 GitHub/Gitee 链接正确、新标签打开、Esc/关闭可退
 - [ ] 失败页死亡数字滚动/回弹正常；商店 60s 不买后激光明显加速、买枪后恢复正常
 - [ ] 固定文案逐字未改；小明无台词
 - [ ] 线上 URL 可开局、资源无 404（音频除外）
