@@ -12,6 +12,7 @@
 
 - **在线试玩**：https://idealismo10.github.io/WUHUADIxiaozhuan/
 - **源码仓库**：https://github.com/idealismo10/WUHUADIxiaozhuan
+- **Gitee 镜像**：https://gitee.com/idealismo10/WUHUADIxiaozhuan （公开；`master` + `gh-pages` 已推送；Pages 待实名认证后网页手动开启）
 - **本地产物**：`dist/`（静态托管）、`/sdcard/Download/DSH-Go/物化帝笑传-web.zip`
 
 ## 1. 当前状态（2026-11-23）
@@ -25,7 +26,7 @@
 | 上线 | **2026-11-23 晚已发布第二轮**：`idealismo10/WUHUADIxiaozhuan`，Pages 源 `gh-pages`（`b531213`），线上 JS `index-CdlTiSjT.js` 与本地 `dist` 逐字节一致；线上标题/开始/第一关 HUD/多指触控/暂停恢复已验证 |
 | 手机真机 | 横屏渲染、触控移动/跳跃、暂停、全屏按钮已验证；完整两关建议人工复跑 |
 | 失败音效 | 用户提供的 mp3 已降噪/转码为 `fail.ogg` + mp3 + m4a；`sfx.fail` 已实际加载 |
-| 待补 | 第二关 Boss 正式名；其余 17 个音效/BGM；少量打磨项见 §8 |
+| 待补 | 第二关 Boss 正式名；其余 17 个音效/BGM；Gitee Pages（需实名认证后网页手动开启）；少量打磨项见 §8 |
 
 ## 2. 用户已拍板 / 已实现的关键决策
 
@@ -192,6 +193,15 @@ screenshots/                # 手机实机、音频处理前后频谱
 - 顺手修了眨眼期间仍画 1px 预警线的视觉残留（眼睛已闭、判定冻结时不再画）。
 - 无头运行时验证（Chromium `--use-angle=swiftshader-webgl` 可跑 WebGL2 + `window.__CMI__` 调试桥）：P3 锁定站着不动 2.5s → `Fail/gaze`；锁定后横移 → 暴露 0、不失败；P2 实机光束从 `[180,780]` 交叉到 `[380,580]`。
 
+### 6.12 2026-11-23 晚第二轮修复与发布
+
+- **扇形视线**：从瞳孔发出，半角 `gazeFanHalfAngle=8°`、采样 `gazeFanSlices=18`；挂牌阴影改斜向；新增 `gazeFanHitsPlayer`。详见 §6.4 与 docs/02。
+- **夺枪过场重做**：按购买时玩家位置锚定冲向玩家、枪口火光/曳光、笑长连椅倒地 + 帽子掉落、枪抛物线抛回；过场清激光/读条、玩家无敌。详见 §6.5。
+- **第二关审计 9 条**：A5/A6 独立计时并保留帧超期量（≈2s/≈3s，同帧双到时 A6 顺延 `giantStagger=0.35s`）；A5 补预警音；转阶段那一发不掉币；`run.giant` 延后到巨大化 1.2s；香蕉皮底层 0.3s 去抖；CP2 重试不再重复鞋气泡；`game:retry` 按 bossPhase 推导 cp1/cp2；A2 站桩落点铺开。详见 §8 与 docs/21。
+- **买枪后刷新软锁修复**：`planResume()` + `npcFlags.l1_cleared`；枪未入包 → 回 R4 补播过场，已结算 → 直进第二关并补 15000；`src/tests/resume.test.ts` 7 条覆盖。详见 §8.17。
+- **移动端**：指针捕获失败时 `pointerleave` 释放、按钮 `pointerIds` 计数、暂停/失活 `releaseHeld()` 防粘键、iPhone Safari 隐藏全屏按钮、≤720px BOSS 血条 34vw。详见 §8.16。
+- **发布**：代码 master `2416500`、gh-pages `b531213`，线上 JS `index-CdlTiSjT.js` SHA256 `de3bac…fa1c97`；Gitee 镜像已推送。详见 §7 / §10。
+
 ## 7. 验收记录（已跑）
 
 | 项 | 结果 |
@@ -248,10 +258,11 @@ screenshots/                # 手机实机、音频处理前后频谱
 
 - GitHub：`idealismo10/WUHUADIxiaozhuan`；Pages 源为 `gh-pages` 分支，URL `https://idealismo10.github.io/WUHUADIxiaozhuan/`。
 - **2026-11-23 账号/仓库改名**：GitHub 用户名 `Lhy220402` → `idealismo10`，仓库 `wuhua-dixiao` → `WUHUADIxiaozhuan`；旧地址由 GitHub 重定向。Gitee 用户名也为 `idealismo10`；2026-11-23 晚已在 Gitee 建公开仓库 `idealismo10/WUHUADIxiaozhuan` 并推送 `master`（源码）/ `gh-pages`（构建产物），Pages 服务未开启（需实名认证 + 网页手动启动）。
-- **发布记录（2026-11-23）**：`pnpm build` 后把 `dist/` 覆盖到 `gh-pages`（commit `f8c50af`），master 已推送（含激光修复与本文档更新）；线上 `assets/index-glJx25Xp.js` 的 SHA256 与本地 `dist` 完全一致。`base: "./"` 未改。
+- **发布记录（2026-11-23 晚，第二轮）**：代码 master `2416500`、文档 master `f69e6a5`；`gh-pages` 覆盖为 `b531213`（Pages build `built`）；线上 `assets/index-CdlTiSjT.js` SHA256 `de3bac…fa1c97` 与本地 `dist` 逐字节一致；Playwright 线上验证标题/开始/第一关 HUD/多指触控/暂停恢复通过，0 pageerror、0 非音频 404。`base: "./"` 未改。第一轮记录：master `9dd18ee` / gh-pages `f8c50af`（`index-glJx25Xp.js`）。
 - 本机 `gh` 已登录该账号；**不要把 token 写进任何文件/提交/README**。
 - 用户曾在聊天中贴过 GitHub PAT / Gitee token，建议用完立即轮换/撤销（本次 Gitee token 同样建议轮换）。
 - Gitee 镜像：`https://gitee.com/idealismo10/WUHUADIxiaozhuan`，`gh-pages` 与 GitHub 发布构建一致（SHA256 已核）；本机未配置持久凭据，推送用临时 HTTPS token（不落盘）。
+- Gitee Pages 开启（需账号实名认证）：仓库 → 服务 → Gitee Pages → 分支 `gh-pages`、目录 `/` → 启动；免费版每次推送后需在设置页点「更新」，地址预期 `https://idealismo10.gitee.io/WUHUADIxiaozhuan/`。Gitee OpenAPI 无 Pages 端点（`/pages` 405、`/pages/builds` 404），不能脚本开启。
 - 更新线上：
   ```bash
   pnpm build
@@ -272,6 +283,7 @@ screenshots/                # 手机实机、音频处理前后频谱
 | 失败音效不响 | 检查 `public/audio/fail.ogg` 是否在 `dist/audio/`，控制台是否 `[audio] missing sfx.fail` |
 | 商店按钮点不到 | 确认 fsm 处于 `Shop`、`#ui-root` 没被其它层挡；`ShopPanel` 的 scrim 事件 |
 | 线上 404 | 检查 `vite.config.ts` `base: "./"` 与 gh-pages 文件结构 |
+| Gitee Pages 404 | Pages 未开启或未点「更新」；需实名认证后 仓库 → 服务 → Gitee Pages 启动/更新 |
 | 存档损坏白屏 | `SaveStore.load()` 应返回默认档并 toast，不应抛异常 |
 
 ## 12. 验收清单（下一轮回归用）
