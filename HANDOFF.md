@@ -258,7 +258,7 @@ screenshots/                # 手机实机、音频处理前后频谱
 
 - GitHub：`idealismo10/WUHUADIxiaozhuan`；Pages 源为 `gh-pages` 分支，URL `https://idealismo10.github.io/WUHUADIxiaozhuan/`。
 - **2026-11-23 账号/仓库改名**：GitHub 用户名 `Lhy220402` → `idealismo10`，仓库 `wuhua-dixiao` → `WUHUADIxiaozhuan`；旧地址由 GitHub 重定向。Gitee 用户名也为 `idealismo10`；2026-11-23 晚已在 Gitee 建公开仓库 `idealismo10/WUHUADIxiaozhuan` 并推送 `master`（源码）/ `gh-pages`（构建产物），Pages 服务未开启（需实名认证 + 网页手动启动）。
-- **发布记录（2026-11-23 晚，第二轮）**：代码 master `2416500`、文档 master `f69e6a5`；`gh-pages` 覆盖为 `b531213`（Pages build `built`）；线上 `assets/index-CdlTiSjT.js` SHA256 `de3bac…fa1c97` 与本地 `dist` 逐字节一致；Playwright 线上验证标题/开始/第一关 HUD/多指触控/暂停恢复通过，0 pageerror、0 非音频 404。`base: "./"` 未改。第一轮记录：master `9dd18ee` / gh-pages `f8c50af`（`index-glJx25Xp.js`）。
+- **发布记录（2026-11-23 晚，第二轮）**：代码发布提交 master `2416500`（之后仅文档更新）；`gh-pages` 覆盖为 `b531213`（Pages build `built`）；线上 `assets/index-CdlTiSjT.js` SHA256 `de3bac…fa1c97` 与本地 `dist` 逐字节一致；Playwright 线上验证标题/开始/第一关 HUD/多指触控/暂停恢复通过，0 pageerror、0 非音频 404。`base: "./"` 未改。第一轮记录：master `9dd18ee` / gh-pages `f8c50af`（`index-glJx25Xp.js`）。
 - 本机 `gh` 已登录该账号；**不要把 token 写进任何文件/提交/README**。
 - 用户曾在聊天中贴过 GitHub PAT / Gitee token，建议用完立即轮换/撤销（本次 Gitee token 同样建议轮换）。
 - Gitee 镜像：`https://gitee.com/idealismo10/WUHUADIxiaozhuan`，`gh-pages` 与 GitHub 发布构建一致（SHA256 已核）；本机未配置持久凭据，推送用临时 HTTPS token（不落盘）。

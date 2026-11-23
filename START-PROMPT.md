@@ -26,10 +26,10 @@
 - 两关可玩：第一关笑长视线战 + 45s 商店 + 潮夺枪 6s 过场；第二关 6 种攻击 + 巨大化 + 碰鞋 + CP1/CP2。
 - 手机横屏触控 + PC 键鼠；DOM 覆盖层 UI；canvas 只画世界；存档 localStorage key `cmi.save.v1`。
 - `pnpm typecheck` 通过；`pnpm test` **12 文件 / 81 条全绿**；`pnpm build` 通过。
-- **线上已发布（2026-11-23 晚）**：master `f69e6a5`（文档；代码发布提交 `2416500`）、gh-pages `b531213`，Pages build `built`；线上入口 `assets/index-CdlTiSjT.js` SHA256 `de3bac…fa1c97`，与本地 `dist` 逐字节一致：
+- **线上已发布（2026-11-23 晚）**：master（代码发布提交 `2416500`，此后仅文档更新）、gh-pages `b531213`，Pages build `built`；线上入口 `assets/index-CdlTiSjT.js` SHA256 `de3bac…fa1c97`，与本地 `dist` 逐字节一致：
   https://idealismo10.github.io/WUHUADIxiaozhuan/
   仓库：https://github.com/idealismo10/WUHUADIxiaozhuan
-- **Gitee 镜像（2026-11-23 晚）**：https://gitee.com/idealismo10/WUHUADIxiaozhuan （公开；master `f69e6a5` + gh-pages `b531213` 已推送，gh-pages 产物 SHA256 已与本地核对）。Gitee Pages **未开启**：需账号实名认证后在仓库「服务 → Gitee Pages」选 `gh-pages` / `/` 手动启动；免费版每次推送后需点「更新」，地址预期 `https://idealismo10.gitee.io/WUHUADIxiaozhuan/`。
+- **Gitee 镜像（2026-11-23 晚）**：https://gitee.com/idealismo10/WUHUADIxiaozhuan （公开；master 最新 + gh-pages `b531213` 已推送，gh-pages 产物 SHA256 已与本地核对）。Gitee Pages **未开启**：需账号实名认证后在仓库「服务 → Gitee Pages」选 `gh-pages` / `/` 手动启动；免费版每次推送后需点「更新」，地址预期 `https://idealismo10.gitee.io/WUHUADIxiaozhuan/`。
 - 失败音效已处理：public/audio/fail.ogg / fail.mp3 / fail.m4a（源文件已降噪、−16 LUFS、mono 48k）。
 - 已知偏差见 HANDOFF.md §8，例如 P3 凝视锁定调成 4.0s、R2/R3 新增 64px 坑、第二关 Boss 名字仍是占位。
 - 跳跃手感已修：`jumpCutDelay=0.12s`（轻点约 69px / 按住约 103px）；R1/R3 上层平台已横移到可达位置，详见 HANDOFF §6.10。
@@ -58,7 +58,7 @@
 - Playwright 无头 Chromium 用 SwiftShader 时 Kaplay 的 WebGL2 会 context lost，导致截图 canvas 空白；这是测试环境限制，真机/正常浏览器正常。不要据此误判游戏坏掉。
 - 产出放工作区；给用户的成品/截图复制到 /sdcard/Download/DSH-Go/。
 - GitHub CLI 已在本机登录 `idealismo10`（旧名 Lhy220402 会重定向）；不要把 token 写进文件/提交/聊天。git push 偶尔网络超时，可重试或用 GitHub Git Data API 更新分支。
-- 本地 HEAD 已与 GitHub/Gitee master（`f69e6a5`）一致，gh-pages 为 `b531213`；若分叉先 fetch 再处理，不要 force push 覆盖。Gitee 推送用一次性 HTTPS token（不落盘），token 用完建议轮换。
+- 本地 HEAD 已与 GitHub/Gitee master 一致（发布提交 `2416500`，此后仅文档更新），gh-pages 为 `b531213`；若分叉先 fetch 再处理，不要 force push 覆盖。Gitee 推送用一次性 HTTPS token（不落盘），token 用完建议轮换。
 
 【当前待办（按用户优先级）】
 A. 第二关 Boss 正式名字（用户给名字后改 content/bosses/boss2.ts 与 HUD 显示；外形已按“学生”实现）。
@@ -90,7 +90,7 @@ F. Gitee Pages：等账号实名认证后，在 Gitee 仓库「服务 → Gitee 
 项目：/root/workspace/wuhua-dixiao，已实现并构建。只做 GitHub Pages / Gitee 镜像发布与线上验证，不改玩法。
 - 先读 HANDOFF.md §10（发布与凭据）与 README.md「GitHub Pages 发布 / Gitee 镜像」。
 - `pnpm typecheck && pnpm test && pnpm build`；检查 dist/index.html 使用相对路径（base "./"）。
-- 当前基线：代码 master `2416500`、文档 master `f69e6a5`；gh-pages `b531213`；线上 JS `assets/index-CdlTiSjT.js` SHA256 `de3bac…`。
+- 当前基线：代码发布提交 `2416500`（master 后续仅文档更新）；gh-pages `b531213`；线上 JS `assets/index-CdlTiSjT.js` SHA256 `de3bac…`。
 - GitHub：更新 gh-pages 分支；线上 URL https://idealismo10.github.io/WUHUADIxiaozhuan/ 。
 - Gitee：仓库 https://gitee.com/idealismo10/WUHUADIxiaozhuan（gh-pages 分支已推）。Gitee Pages 未开启（需实名认证 + 网页手动启动）；开启后每次推送需在 Pages 设置页点「更新」。
 - 用无头浏览器验证标题、开始、第一关 HUD、资源无 404（缺失音频除外），并核对线上 JS 与本地 dist 的 SHA256。
