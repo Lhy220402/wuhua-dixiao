@@ -154,7 +154,7 @@ export class Overlays {
       el("p", { class: "modal-hint", text: "Esc 关闭" }),
       el("p", { class: "about-footer", text: content.footer }),
     ]);
-    const modal = el("div", { class: "modal-scrim" }, [card]);
+    const modal = el("div", { class: "modal-scrim about-scrim" }, [card]);
     this.root.append(modal);
     this.about = modal;
     close.focus({ preventScroll: true });
