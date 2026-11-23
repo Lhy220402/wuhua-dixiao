@@ -149,6 +149,14 @@ pnpm build
 # 将 dist/ 推送覆盖 gh-pages 分支即可
 ```
 
+## Gitee 镜像（2026-11-23 晚）
+
+- 仓库：**https://gitee.com/idealismo10/WUHUADIxiaozhuan**（公开）
+- 已推送：`master`（源码）与 `gh-pages`（构建产物）；`gh-pages` 的 `index.html` / `index-CdlTiSjT.js` SHA256 与本地 `dist` 一致（`76c1ae…` / `de3bac…`）。
+- **Pages 服务尚未开启**：Gitee Pages 需要账号完成实名认证，然后在仓库「服务 → Gitee Pages」选择分支 `gh-pages`、目录 `/` 手动启动；免费版每次推送后要在设置页点「更新」才生效（无自动部署）。Gitee OpenAPI 没有 Pages 端点（`/pages` 返回 405/404），无法用脚本开启。
+- 开启后地址预期为 `https://idealismo10.gitee.io/WUHUADIxiaozhuan/`。
+- 本机未配置持久凭据；**不要把 token 写进文件/提交/文档**。
+
 ## 设计文档
 
 `docs/` 下保留 v0.1 设计文档；`docs/02-data-contracts.md` 是数值/事件/存档/schema 的唯一事实来源，`docs/51-quality-and-delivery.md` 是 15 个实现任务与验收矩阵。实现中的取舍见本文「与文档的已知偏差」。

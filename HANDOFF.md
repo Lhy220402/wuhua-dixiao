@@ -241,16 +241,17 @@ screenshots/                # 手机实机、音频处理前后频谱
 
 1. **第二关 Boss 名字**（外形已按“学生”实现）。
 2. 其余音效/BGM（可选；缺失静默，不阻塞）。
-3. 是否要 Gitee Pages 镜像：Gitee 新账号 `idealismo10` 下还没有本游戏仓库（只有 `traceless`、`crazy-water-cube`），需要先建仓并给推送凭据。
+3. Gitee Pages 镜像：仓库已建好并推送（`master` 源码 + `gh-pages` 构建产物，公开仓库），但 Gitee Pages 需账号**实名认证** + 在仓库「服务 → Gitee Pages」网页手动开启；免费版每次推送后需点「更新」。OpenAPI 无 Pages 端点，不能脚本开启。
 4. 是否补「梗图鉴」入口 / 死亡数字大动画 / 更硬核难度。
 
 ## 10. 发布与凭据
 
 - GitHub：`idealismo10/WUHUADIxiaozhuan`；Pages 源为 `gh-pages` 分支，URL `https://idealismo10.github.io/WUHUADIxiaozhuan/`。
-- **2026-11-23 账号/仓库改名**：GitHub 用户名 `Lhy220402` → `idealismo10`，仓库 `wuhua-dixiao` → `WUHUADIxiaozhuan`；旧地址由 GitHub 重定向。Gitee 用户名也改为 `idealismo10`，但本游戏尚未在 Gitee 建仓/发布 Pages 镜像。
+- **2026-11-23 账号/仓库改名**：GitHub 用户名 `Lhy220402` → `idealismo10`，仓库 `wuhua-dixiao` → `WUHUADIxiaozhuan`；旧地址由 GitHub 重定向。Gitee 用户名也为 `idealismo10`；2026-11-23 晚已在 Gitee 建公开仓库 `idealismo10/WUHUADIxiaozhuan` 并推送 `master`（源码）/ `gh-pages`（构建产物），Pages 服务未开启（需实名认证 + 网页手动启动）。
 - **发布记录（2026-11-23）**：`pnpm build` 后把 `dist/` 覆盖到 `gh-pages`（commit `f8c50af`），master 已推送（含激光修复与本文档更新）；线上 `assets/index-glJx25Xp.js` 的 SHA256 与本地 `dist` 完全一致。`base: "./"` 未改。
 - 本机 `gh` 已登录该账号；**不要把 token 写进任何文件/提交/README**。
-- 用户曾在聊天中贴过 GitHub PAT / Gitee token，建议发布完成后立即轮换/撤销。
+- 用户曾在聊天中贴过 GitHub PAT / Gitee token，建议用完立即轮换/撤销（本次 Gitee token 同样建议轮换）。
+- Gitee 镜像：`https://gitee.com/idealismo10/WUHUADIxiaozhuan`，`gh-pages` 与 GitHub 发布构建一致（SHA256 已核）；本机未配置持久凭据，推送用临时 HTTPS token（不落盘）。
 - 更新线上：
   ```bash
   pnpm build
