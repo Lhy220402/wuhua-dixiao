@@ -276,7 +276,7 @@ Playing → LevelClear(n) → LevelIntro(2) 或 ToBeContinued
 - 入口：标题页「关于」ghost 按钮（开始 / 继续 / 设置 / 关于 四枚）；弹层打开后标题页保持冻结，不进入关卡。
 - 结构：居中卡片 `min(520, 100vw−32)`、左对齐；`关于` kicker → `物化帝笑传` 标题 → 副标 → 玩法简介 → 3 条要点 → 两个外链按钮（GitHub 源码 / Gitee 镜像，`target="_blank" rel="noopener noreferrer"`）→「关闭」→ `Esc 关闭` → 版本脚注。
 - 文案与仓库地址只放 `src/content/about.ts`，UI 不写死 URL；外链不可被复制拦截影响（只拦复制/选择，不拦点击）。
-- 短屏横屏（`max-height: 430px`）隐藏长 URL 与脚注，卡片可滚动；`prefers-reduced-motion` 沿用全局直出。
+- 短屏横屏（`max-height: 430px`）压缩为「标题 + 简介 + 3 条要点 + 并排双链接 + 关闭」，隐藏 kicker/副标/长 URL/脚注/Esc 提示，卡片仍保留滚动兜底；`prefers-reduced-motion` 沿用全局直出。
 - 状态/交互：打开后焦点在「关闭」；Esc 关闭；点击遮罩不关闭（与其它 modal 一致）；关闭后回到标题。
 - 验收：标题页可见「关于」；3 条玩法简介；两个链接 href 正确并新标签打开；Esc/关闭可用；无 JS 报错。
 
