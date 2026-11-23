@@ -97,7 +97,7 @@ docs/                         # 冻结的 v0.1 设计文档（02 为唯一事实
 - **二轮审计修复**：A5/A6 独立计时且保留帧超期量（恢复 ≈2s/≈3s，同帧双到时 A6 顺延 0.35s）；A5 补预警音；转阶段不掉币；`run.giant` 延后到 1.2s 置位；CP2 重试不再重复鞋气泡；香蕉皮底层去抖；A2 站桩落点铺开；`game:retry` 按 bossPhase 推导 cp1/cp2。
 - **继续游戏软锁修复**：买枪过场中 / 通关前刷新不再卡死——`planResume()` 用 `npcFlags.l1_cleared` 区分 0.7s 结算窗口：补播夺枪过场，或已结算时直接进第二关并补 15000。
 - 测试：新增 `arena-boss.test.ts`、`resume.test.ts` 与扇形视线断言；`pnpm test` 81 条全绿。
-- **已发布（2026-11-23 晚）**：master `2416500` → gh-pages `b531213`，线上 <https://idealismo10.github.io/WUHUADIxiaozhuan/> 入口 JS `index-CdlTiSjT.js` 的 SHA256 与本地 `dist` 逐字节一致；Playwright 线上验证标题/开始/第一关 HUD/多指触控/暂停恢复通过，0 pageerror、0 非音频 404（音频 404 为故意缺失）。
+- **已发布（2026-11-23 晚第三轮）**：master 代码提交 `73ce634` → gh-pages `4aacb86`（Pages build `built`，2026-11-23T15:52Z），线上 <https://idealismo10.github.io/WUHUADIxiaozhuan/> 入口 JS `index-CPABeHCx.js` SHA256 `4784f388…6688d`、CSS `index-D4-97FbF.css` SHA256 `eafa4419…a0cd2`，均与本地 `dist` 逐字节一致。Playwright 线上验证：标题/关于/开始→第一关 HUD/暂停恢复通过，0 pageerror、0 非音频 404（4 个音频 404 为故意缺失）。
 
 ## 2026-11-23 晚第三轮维护（图标 / 防误触 / 难度 / 打磨）
 
@@ -157,7 +157,7 @@ pnpm build
 
 > 2026-11-23 账号/仓库改名：GitHub 用户名 `Lhy220402` → `idealismo10`，仓库 `wuhua-dixiao` → `WUHUADIxiaozhuan`，Pages 地址随之变为新 URL。
 
-已发布：**https://idealismo10.github.io/WUHUADIxiaozhuan/**（仓库 `idealismo10/WUHUADIxiaozhuan`，`gh-pages` 分支，构建类型为 branch；2026-11-23 晚已更新到扇形视线/夺枪动画/Boss 审计修复/移动端版，gh-pages `b531213`，线上 JS `index-CdlTiSjT.js` 与本地 `dist` 逐字节一致）。后续更新：
+已发布：**https://idealismo10.github.io/WUHUADIxiaozhuan/**（仓库 `idealismo10/WUHUADIxiaozhuan`，`gh-pages` 分支，构建类型为 branch；2026-11-23 晚第三轮已更新到图标/防误触/难度/死亡数字/商店加速/关于版，gh-pages `4aacb86`，线上 JS `index-CPABeHCx.js` 与本地 `dist` 逐字节一致）。后续更新：
 
 ```bash
 pnpm build
@@ -167,7 +167,7 @@ pnpm build
 ## Gitee 镜像（2026-11-23 晚）
 
 - 仓库：**https://gitee.com/idealismo10/WUHUADIxiaozhuan**（公开）
-- 已推送：`master`（源码）与 `gh-pages`（构建产物）；`gh-pages` 的 `index.html` / `index-CdlTiSjT.js` SHA256 与本地 `dist` 一致（`76c1ae…` / `de3bac…`）。
+- Gitee 镜像仍是 2026-11-23 第二轮的 `gh-pages b531213`；本轮（`4aacb86`）**尚未推送 Gitee**（本机无持久凭据，需要一次性 token 才能推）。
 - **Pages 服务尚未开启**：Gitee Pages 需要账号完成实名认证，然后在仓库「服务 → Gitee Pages」选择分支 `gh-pages`、目录 `/` 手动启动；免费版每次推送后要在设置页点「更新」才生效（无自动部署）。Gitee OpenAPI 没有 Pages 端点（`/pages` 返回 405/404），无法用脚本开启。
 - 开启后地址预期为 `https://idealismo10.gitee.io/WUHUADIxiaozhuan/`。
 - 本机未配置持久凭据；**不要把 token 写进文件/提交/文档**。
