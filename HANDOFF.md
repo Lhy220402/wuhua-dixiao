@@ -1,5 +1,7 @@
 # 《物化帝笑传》交接文档（v1.0 · 2026-11-23）
 
+> ⚠ 2026-11-23 晚有未发布的 WIP（扇形视线/夺枪动画/Boss 审计修复/移动端）：**先读 `HANDOFF-WIP.md`**，再读本文件。
+
 > 用途：把当前**已实现、已上线**的项目完整交给下一个对话 / 新 AI。
 > 先读本文件，再按「第 3 节」读代码；设计文档在 `docs/`，`docs/02-data-contracts.md` 是唯一事实来源。
 > 工作目录：`/root/workspace/wuhua-dixiao`
@@ -18,7 +20,7 @@
 |---|---|
 | 代码实现 | **已完成**，两关可玩，`src/` 约 40 个 TS/文件 |
 | 依赖 | 仅 `kaplay`（运行时）+ `vite` / `typescript` / `vitest`（开发） |
-| 测试 | `pnpm test` → **11 个文件 / 68 条全绿**（含扇形视线、Boss 战、夺枪过场回归） |
+| 测试 | `pnpm test` → **12 个文件 / 81 条全绿**（含扇形视线、Boss 战、夺枪过场、继续游戏软锁回归） |
 | 构建 | `pnpm build` 通过；gzip 约 114KB JS + 6KB CSS |
 | 上线 | **2026-11-23 已发布到改名后的仓库**：`idealismo10/WUHUADIxiaozhuan`，Pages 源 `gh-pages`（f8c50af），线上标题/开局/HUD/资源已验证 |
 | 手机真机 | 横屏渲染、触控移动/跳跃、暂停、全屏按钮已验证；完整两关建议人工复跑 |
@@ -56,7 +58,7 @@
 cd /root/workspace/wuhua-dixiao
 pnpm install        # 已装过可跳过；pnpm 12，已配置 esbuild 构建白名单
 pnpm dev            # http://localhost:5173/ ，手机同局域网用 http://<IP>:5173/
-pnpm test           # Vitest 纯逻辑单测（68 条）
+pnpm test           # Vitest 纯逻辑单测（81 条）
 pnpm typecheck      # tsc --noEmit
 pnpm build          # dist/，base: "./"，可子路径托管
 pnpm preview        # 预览生产构建
@@ -105,7 +107,7 @@ src/
     items.ts / shops.ts / buffs.ts / memes.ts / cutscenes.ts / audio-manifest.ts
   art/                      # 代码生成扁平矢量：玩家/笑长/Boss2/NPC/瓦片/物品/FX
   ui/                       # HUD / 对话 / 商店 / 过场跳过 / 标题/暂停/失败/结算/TBC / 触控
-  tests/                    # 11 个 vitest 文件，68 条
+  tests/                    # 12 个 vitest 文件，81 条
 docs/                       # v0.1 设计文档（冻结）
 screenshots/                # 手机实机、音频处理前后频谱
 ```
@@ -153,7 +155,9 @@ screenshots/                # 手机实机、音频处理前后频谱
 - 阶段 2 鞋判定 192×64（x640–832 / y448–512），1.0s 后激活；**若转阶段时玩家在鞋框内，会软推到 x=560**，避免瞬赢。
 - 失败回 CP1/CP2；CP2 重试直接巨大化、1.5s 无敌。
 - 碰鞋 → 3s 胜利过场 → LevelClear → **未完待续**。
-- **2026-11-23 Boss 战修复**：A2 粉笔雨按玩家过去 1.5s 等距采样（旧实现 5 个落点几乎叠在一列）；A6 踩踏在预警时锁定落点（旧实现影子在旧位置、脚落在玩家新位置，躲不掉）；A3 冲击波预警改画在 Boss 脚下；同帧受击与碰鞋胜利改为胜利优先；香蕉皮不再每帧重复红闪/刷滑倒；讲台掩体从 `room.desks` 传入，移除 arena-boss 里的硬编码坐标。
+- **2026-11-23 Boss 战修复**：A2 粉笔雨按玩家过去 1.5s 等距采样（旧实现 5 个落点几乎叠在一列；站桩时也会铺开）；A6 踩踏在预警时锁定落点（旧实现影子在旧位置、脚落在玩家新位置，躲不掉）；A3 冲击波预警改画在 Boss 脚下；同帧受击与碰鞋胜利改为胜利优先；香蕉皮不再每帧重复红闪/刷滑倒（底层 0.3s 去抖）；讲台掩体从 `room.desks` 传入，移除 arena-boss 里的硬编码坐标。
+- **2026-11-23 二轮修复（独立审计）**：A5/A6 改为独立计时 + 独立 pending，计时器保留帧超期量（`+= interval`），预警间隔恢复 ≈2s/≈3s（旧版被 telegraph 冻结成 3.4s/4.4s），同帧双到时 A6 延后 `giantStagger=0.35s`；A5 补 `onAttack` 预警音；转阶段那一发不再掉 2500 金币；`run.giant` 改到巨大化 1.2s 时刻才置 true；CP2 重试不再重复鞋气泡；香蕉皮底层 0.3s 去抖；A2 站桩时落点铺开；`game:retry` 改为按 bossPhase 推导 cp1/cp2。
+- **2026-11-23 软锁修复**：第一关 R4 买枪后刷新（过场中/通关前）会回到无枪、无商店、无出口的 R4。`planResume()` 现在判断：枪未入包 → 回 R4 补播夺枪过场（玩家放回商店位置）；枪已入包且已结算 → 直接进第二关并补发 15000。用 `npcFlags.l1_cleared`（buyGun 写 false、markLevelComplete 写 true）区分“5.3s grantItem→6.0s 结算”的 0.7s 窗口，避免少记通关；旧档无该键时用“有枪+看过过场”推断。`src/tests/resume.test.ts` 覆盖 7 条分支，运行时用 localStorage 四种存档验证。
 
 ### 6.7 存档
 - `SaveV1` 字段见 `src/save/schema.ts` 与 `docs/02 §4`；纯函数序列化在 `serialize.ts`，localStorage 在 `storage.ts`。
@@ -184,7 +188,7 @@ screenshots/                # 手机实机、音频处理前后频谱
 - **P3 锁定后继续追人**：`lock` 在 4.0s 锁定期间仍按 240px/s 跟随玩家，等于无解追踪。改为预警期追踪、开火后停在锁定点；站着不动 2.5s 读条打满，锁定瞬间横移可以躲。
 - 单眼房间（R2）的交叉段原本是钉死在 x=800 的死光束，现在作为单束横向扫射。
 - **P1 扫射时长改为按「行程/速度」推导 ≈1.882s**（用户 2026-11-23 拍板），扫满 160→800；P2 仍用 1.8s，攻击轮变成 ≈4.08s（见 §8.11）。
-- 新增 `src/tests/laser-boss.test.ts`（10 条：P1/P2/P3 轨迹、终点、单眼、眨眼恢复、挂牌截断、锁定读条）与 `beamHitsPlayer` 几何断言（4 条）；`pnpm test` 64 条全绿。测试做过变异验证：去掉 P3 追踪、眨眼 active 恢复、P2 交叉修复会分别让对应用例失败。
+- 新增 `src/tests/laser-boss.test.ts`（10 条：P1/P2/P3 轨迹、终点、单眼、眨眼恢复、挂牌截断、锁定读条）与 `gazeFanHitsPlayer` 几何断言（4 条）；`pnpm test` 全绿（当前 81 条）。测试做过变异验证：去掉 P3 追踪、眨眼 active 恢复、P2 交叉修复会分别让对应用例失败。
 - 顺手修了眨眼期间仍画 1px 预警线的视觉残留（眼睛已闭、判定冻结时不再画）。
 - 无头运行时验证（Chromium `--use-angle=swiftshader-webgl` 可跑 WebGL2 + `window.__CMI__` 调试桥）：P3 锁定站着不动 2.5s → `Fail/gaze`；锁定后横移 → 暴露 0、不失败；P2 实机光束从 `[180,780]` 交叉到 `[380,580]`。
 
@@ -193,7 +197,7 @@ screenshots/                # 手机实机、音频处理前后频谱
 | 项 | 结果 |
 |---|---|
 | `pnpm typecheck` | 通过 |
-| `pnpm test` | 64/64 通过（10 文件，约 1.5s） |
+| `pnpm test` | 81/81 通过（12 文件，约 2s） |
 | `pnpm build` | 通过，dist gzip ≈ 114KB JS + 6KB CSS |
 | PC 全流程 | 标题→第一关→商店→买枪→过场跳过→结算→第二关→巨大化→碰鞋→TBC，全通 |
 | 失败 | 尖刺/掉坑、视线满、HP≤0、金币≤0；失败页与 `sfx.fail` 正常 |
@@ -206,7 +210,8 @@ screenshots/                # 手机实机、音频处理前后频谱
 | 线上发布（改名后） | 2026-11-23：master `9dd18ee`、gh-pages `f8c50af`；线上 JS SHA256 与本地 `dist` 逐字节一致；点击「开始」进入第一关 HUD；除故意缺失的音频外无 404 |
 | 扇形视线 | 单测 + 无头运行时：从瞳孔发出 19 条采样、半角 8°、挂牌斜向遮挡；锁定站桩 2.5s → `Fail/gaze`，锁定后横移暴露 0 |
 | 夺枪过场 | 无头运行时：锚点 864、潮冲到 906、枪响 2.6s、倒地 3.0s、抛枪 502→864、5.3s 入包、6.0s LevelClear |
-| 第二关 Boss | 单测：A2 落点跨度 >100px、A3 预警在 Boss 脚下、A6 落点=预警位置；运行时碰鞋优先于同帧伤害 |
+| 第二关 Boss | 单测：A2 落点跨度 >100px（站桩也铺开）、A3 预警在 Boss 脚下、A6 落点=预警位置、A5/A6 间隔 2s/3s、转阶段不掉币、CP2 不重复气泡；运行时碰鞋优先于同帧伤害 |
+| 继续游戏软锁 | `planResume` 单测 7 条：普通恢复 / R4 未拿枪补播过场 / 0.7s 结算窗口补播 / 旧档无标记推断 / 已结算直进第二关 / 矛盾档仍补播 / 第二关恢复 |
 
 > 注意：本机 Playwright/无头 Chromium 默认 SwiftShader 参数下 Kaplay 的 WebGL2 会 context lost，无头截图里 canvas 是空的；这是测试环境限制，**真机手机/正常浏览器渲染正常**。不要据此误判游戏坏掉。
 > 纯逻辑/运行时验证可用 `--use-gl=angle --use-angle=swiftshader-webgl --enable-unsafe-swiftshader --ignore-gpu-blocklist` 启动 Chromium：WebGL2 可用、游戏循环可跑、`window.__CMI__.debugState()` 可取状态；截图仍可能是空白 canvas（context lost），不要以截图为唯一证据。
@@ -228,7 +233,8 @@ screenshots/                # 手机实机、音频处理前后频谱
 13. **眨眼时的预警线（已修）**：`drawLaserBoss` 现在眨眼期间不再画 1px 预警线（眼睛已闭、判定冻结）；此前会残留一条没有判定的线。
 14. **扇形视线**：docs/02 已补 `gazeFanHalfAngle=8°` / `gazeFanSlices=18`；docs/20 已改成“从瞳孔射出的扇形”。核心光束 6/10px 只剩视觉强化作用。
 15. **A6 踩踏**：docs/21 原文“落点=玩家当前 x”与“预警期离开阴影”矛盾；实现改为预警时锁定落点（否则移动无法躲）。已同步文档措辞。
-16. **移动端**：小屏横屏（≤720px）BOSS 血条缩到 34vw 避免和金币重叠；减少动效设置现在同时关闭 canvas 震屏（此前只关 CSS 动效）。
+16. **移动端**：小屏横屏（≤720px）BOSS 血条缩到 34vw 避免和金币重叠；减少动效设置现在同时关闭 canvas 震屏（此前只关 CSS 动效）；移动端子代理补齐触控防粘键/滑出释放/全屏按钮隐藏等。
+17. **继续游戏软锁（已修）**：买枪过场中刷新曾是死档；现在按 `planResume` 补播过场或直进第二关。建议真机回归：购买后立刻刷新、过场结束前刷新各一次。
 
 ## 9. 待用户提供
 

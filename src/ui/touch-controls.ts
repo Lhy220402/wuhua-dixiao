@@ -10,7 +10,9 @@ export class TouchControls {
   private shoot: HTMLElement;
   private interact: HTMLElement;
   private bindings: Array<() => void> = [];
+  private input: InputSystem | null = null;
   private active = false;
+  private paused = false;
 
   constructor(root: HTMLElement) {
     this.layer = el("div", { class: "touch-layer" });
@@ -25,6 +27,7 @@ export class TouchControls {
 
   bind(input: InputSystem): void {
     this.unbind();
+    this.input = input;
     this.bindings.push(
       input.bindDirectionButton(this.left, "left"),
       input.bindDirectionButton(this.right, "right"),
@@ -37,6 +40,7 @@ export class TouchControls {
   unbind(): void {
     for (const off of this.bindings) off();
     this.bindings = [];
+    this.input = null;
   }
 
   hasTouch(): boolean {
@@ -47,8 +51,21 @@ export class TouchControls {
     );
   }
 
+  /**
+   * 暂停 / 切出 / 进入弹层时主动松开：触控按钮可能因为 CSS 禁用或页面失焦
+   * 收不到 pointerup，输入会“粘住”到恢复后。这里清掉输入并还原高亮。
+   */
+  releaseHeld(): void {
+    this.input?.clearAll();
+    for (const node of [this.left, this.right, this.jump, this.shoot, this.interact]) {
+      node.classList.remove("held");
+    }
+  }
+
   setActive(active: boolean): void {
-    this.active = active && this.hasTouch();
+    const next = active && this.hasTouch();
+    if (this.active && !next) this.releaseHeld();
+    this.active = next;
     setClass(this.layer, "active", this.active);
   }
 
@@ -61,6 +78,8 @@ export class TouchControls {
   }
 
   setPaused(paused: boolean): void {
+    if (paused && !this.paused) this.releaseHeld();
+    this.paused = paused;
     for (const node of [this.left, this.right, this.jump, this.shoot, this.interact]) {
       setClass(node, "disabled", paused);
     }

@@ -177,7 +177,7 @@ P..^^^.......C....^^^....N....
 | 0.00 | 枪交付到物化帝手上（同帧）；激光全熄、读条清零、玩家无敌，输入封锁至 6.00 | `game:cutscene-start{id:'l1_gun_gag'}` `game:shop-purchased` |
 | 0.00–2.20 | 笑长眯眼，头顶气泡 2.2s（逐字 §5.5） | — |
 | 2.20–2.60 | 潮（过场限定、无台词、面罩剪影）从右缘冲入夺枪（0.4s），物化帝头顶「？」 | — |
-| 2.60–3.80 | 潮抬手一枪：2.75 枪响，2.90 命中（白闪 0.08s、慢动作 0.35s、震屏） | 2.90 `game:boss-defeated{bossId:'xiaochang',by:'chao'}` |
+| 2.60–3.80 | 潮抬手一枪：2.75 枪响，2.90 命中（白闪 0.08s、慢动作 0.35s、震屏） | 2.90 `game:boss-defeated{bossId:'xiaochang',method:'chao'}` |
 | 3.80–5.30 | 笑长连人带椅滑倒（1.5s），潮把枪抛回物化帝（枪即道具本体），眼睛变 X，激光器熄灭 | — |
 | 5.30–6.00 | 结算过渡（0.7s）出现「通关」 | 5.30 `game:item-acquired{itemId:'bullet_gun',displayName:'子弹枪（潮的馈赠）'}`；6.00 `game:cutscene-end` `game:level-complete{level:1}` |
 
@@ -279,7 +279,7 @@ PC：A/D 或 ←/→ 移动，Space/W/↑ 跳跃，E 交互，鼠标点面板；
 | 方向 | 事件 | 载荷 | 时机 |
 |---|---|---|---|
 | 发出 | `game:room-enter` | `{level:1, room:'r1'..'r4', index}` | 切房完成帧 |
-| 发出 | `game:boss-phase` / `game:boss-defeated` | `{bossId:'xiaochang', phase:'watch'\|'blink'}` / `{bossId:'xiaochang', by:'chao'}` | 礼堂开场/眨眼切换 / 过场 t=2.90 |
+| 发出 | `game:boss-phase` / `game:boss-defeated` | `{bossId:'xiaochang', phase:'watch'\|'blink'}` / `{bossId:'xiaochang', method:'chao'}` | 礼堂开场/眨眼切换 / 过场 t=2.90 |
 | 发出 | `game:cutscene-start` / `game:cutscene-end` | `{id:'l1_gun_gag'}` | t=0 / t=6.00 |
 | 发出 | `game:shop-opened` / `game:shop-purchased` | `{shopId:'hall_shop', items:['bullet_gun']}` / `{itemId:'bullet_gun', price:10, coinsAfter, borrowed}` | 交互成功 / 点击购买帧 |
 | 发出 | `game:item-acquired` | `{itemId:'bullet_gun', displayName:'子弹枪（潮的馈赠）'}` | 过场 t=5.30 |

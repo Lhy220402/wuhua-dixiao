@@ -89,8 +89,10 @@ export class ArenaBoss {
   private shoeDelay: number = 0;
   private giantA5: number = BALANCE.attacks.a5.interval;
   private giantA6: number = BALANCE.attacks.a6.interval;
-  private giantPending: AttackDef | null = null;
-  private giantPendingTimer: number = 0;
+  private a5Pending: AttackDef | null = null;
+  private a5PendingTimer = 0;
+  private a6Pending: AttackDef | null = null;
+  private a6PendingTimer = 0;
   private shoeBubbleShown = false;
   private history: PlayerHistoryPoint[] = [];
   private clock = 0;
@@ -109,6 +111,8 @@ export class ArenaBoss {
   private desks: readonly Rect[];
   /** A6 踩踏预警时锁定的落点中心（避免“影子在这、脚落在你新位置”） */
   private stompX = 480;
+  /** 香蕉皮回调去抖：站在上面时不每帧都触发 onHurt */
+  private bananaCooldown = 0;
 
   constructor(def: BossDef, desks: readonly Rect[] = []) {
     this.def = def;
@@ -187,12 +191,15 @@ export class ArenaBoss {
     this.shoeDelay = 0;
     this.giantA5 = BALANCE.attacks.a5.interval;
     this.giantA6 = BALANCE.attacks.a6.interval;
-    this.giantPending = null;
-    this.giantPendingTimer = 0;
+    this.a5Pending = null;
+    this.a5PendingTimer = 0;
+    this.a6Pending = null;
+    this.a6PendingTimer = 0;
     this.shoeBubbleShown = false;
     this.history = [];
     this.clock = 0;
     this.stompX = 480;
+    this.bananaCooldown = 0;
     this.homingArr = [];
     this.chalkArr = [];
     this.shockArr = [];
@@ -211,6 +218,16 @@ export class ArenaBoss {
     this.shoeActive = false;
     this.shoeDelay = BALANCE.level2.shoeActivateDelay;
     this.modeTimer = 0;
+    this.giantA5 = BALANCE.attacks.a5.interval;
+    this.giantA6 = BALANCE.attacks.a6.interval;
+    this.a5Pending = null;
+    this.a5PendingTimer = 0;
+    this.a6Pending = null;
+    this.a6PendingTimer = 0;
+    this.bananaCooldown = 0;
+    this.stompX = BALANCE.level2.playerSpawnX;
+    // 阶段 2 失败重试：鞋提示只出一次，重试后不再重复
+    this.shoeBubbleShown = true;
   }
 
   beginGiant(): void {
@@ -225,6 +242,11 @@ export class ArenaBoss {
     this.shockArr = [];
     this.bananaArr = [];
     this.warningArr = [];
+    this.bananaCooldown = 0;
+    this.a5Pending = null;
+    this.a5PendingTimer = 0;
+    this.a6Pending = null;
+    this.a6PendingTimer = 0;
     this.giantA5 = BALANCE.attacks.a5.interval;
     this.giantA6 = BALANCE.attacks.a6.interval;
   }
@@ -232,8 +254,13 @@ export class ArenaBoss {
   hitByBullet(): { hp: number; scraped: boolean; dropCoin: boolean; triggerGiant: boolean } {
     const res = applyBulletDamage(this.hp, this.giant ? "bullets" : this.phase.invulnerable, this.giant);
     this.hp = res.hp;
-    const dropCoin = !res.scraped && Math.floor((this.def.hp - this.hp) / BALANCE.level2.bulletDamage) % BALANCE.economy.bossHitsPerCoin === 0 && this.hp < this.def.hp;
     const triggerGiant = !this.giant && shouldGiant(this.hp);
+    // docs/21 §6：转阶段瞬间不结算伤害与掉落
+    const dropCoin =
+      !res.scraped &&
+      !triggerGiant &&
+      this.hp < this.def.hp &&
+      Math.floor((this.def.hp - this.hp) / BALANCE.level2.bulletDamage) % BALANCE.economy.bossHitsPerCoin === 0;
     return { hp: this.hp, scraped: res.scraped, dropCoin, triggerGiant };
   }
 
@@ -256,6 +283,7 @@ export class ArenaBoss {
   update(dt: number, player: Vec, cbs: ArenaCallbacks): void {
     this.callbacks = cbs;
     this.clock += dt;
+    this.bananaCooldown = Math.max(0, this.bananaCooldown - dt);
     this.playerHintX = player.x;
     this.history.push({ x: player.x, y: player.y, t: this.clock });
     while (this.history.length > 0 && this.clock - this.history[0]!.t > 1.5) this.history.shift();
@@ -440,58 +468,80 @@ export class ArenaBoss {
   }
 
   private updateGiant(dt: number, player: Vec): void {
-    // 阶段 2：A5 每 2s、A6 每 3s，错开
-    if (this.giantPending) {
-      this.giantPendingTimer -= dt;
-      if (this.giantPendingTimer <= 0) {
-        const attack = this.giantPending;
-        this.giantPending = null;
-        if (attack.id === "a5") {
-          this.shockArr.push({
-            x: 896,
-            y: 456,
-            w: Number(attack.params["hitboxW"] ?? 48),
-            h: Number(attack.params["hitboxH"] ?? 56),
-            vx: -Number(attack.params["speed"] ?? 420),
-            giant: true,
-          });
-        } else if (attack.id === "a6") {
-          this.warningArr = this.warningArr.filter((w) => w.kind !== "stomp");
-          this.shockArr.push({
-            x: this.stompX - Number(attack.params["hitboxW"] ?? 96) / 2,
-            y: 448,
-            w: Number(attack.params["hitboxW"] ?? 96),
-            h: Number(attack.params["hitboxH"] ?? 64),
-            vx: 0,
-            giant: true,
-            hold: Number(attack.params["hold"] ?? 0.2),
-            hit: false,
-          });
-        }
+    // 阶段 2：A5 每 2s、A6 每 3s，各自独立计时/预警，互不阻塞。
+    // 计时器在 telegraph 期间也继续走，否则实际间隔会被 0.6~0.8s 拉长（旧版实测 A5 3.4s）。
+    this.giantA5 -= dt;
+    this.giantA6 -= dt;
+
+    if (this.a5Pending) {
+      this.a5PendingTimer -= dt;
+      if (this.a5PendingTimer <= 0) {
+        const attack = this.a5Pending;
+        this.a5Pending = null;
+        this.shockArr.push({
+          x: 896,
+          y: 456,
+          w: Number(attack.params["hitboxW"] ?? 48),
+          h: Number(attack.params["hitboxH"] ?? 56),
+          vx: -Number(attack.params["speed"] ?? 420),
+          giant: true,
+        });
       }
-    } else {
-      this.giantA5 -= dt;
-      this.giantA6 -= dt;
-      if (this.giantA5 <= 0) {
-        this.giantA5 = BALANCE.attacks.a5.interval;
-        this.giantPending = this.phase.attacks.find((a) => a.id === "a5") ?? null;
-        this.giantPendingTimer = (this.giantPending?.telegraphMs ?? 600) / 1000;
-        this.warningArr = this.warningArr.filter((w) => w.kind !== "chalk" && w.kind !== "aim");
-        this.warningArr.push({ kind: "shock", x: 896, y: 456, w: 48, h: 56, timer: this.giantPendingTimer, total: this.giantPendingTimer });
-      } else if (this.giantA6 <= 0) {
-        this.giantA6 = BALANCE.attacks.a6.interval;
-        this.giantPending = this.phase.attacks.find((a) => a.id === "a6") ?? null;
-        this.giantPendingTimer = (this.giantPending?.telegraphMs ?? 800) / 1000;
-        // 预警时锁定落点中心：玩家看到阴影后可以离开，踩踏不再追到新位置
+    }
+    if (this.a6Pending) {
+      this.a6PendingTimer -= dt;
+      if (this.a6PendingTimer <= 0) {
+        const attack = this.a6Pending;
+        this.a6Pending = null;
+        this.warningArr = this.warningArr.filter((w) => w.kind !== "stomp");
+        this.shockArr.push({
+          x: this.stompX - Number(attack.params["hitboxW"] ?? 96) / 2,
+          y: 448,
+          w: Number(attack.params["hitboxW"] ?? 96),
+          h: Number(attack.params["hitboxH"] ?? 64),
+          vx: 0,
+          giant: true,
+          hold: Number(attack.params["hold"] ?? 0.2),
+          hit: false,
+        });
+      }
+    }
+
+    const dueA5 = this.giantA5 <= 0 && !this.a5Pending;
+    const dueA6 = this.giantA6 <= 0 && !this.a6Pending;
+    if (dueA5) {
+      this.giantA5 += BALANCE.attacks.a5.interval;
+      this.a5Pending = this.phase.attacks.find((a) => a.id === "a5") ?? null;
+      this.a5PendingTimer = (this.a5Pending?.telegraphMs ?? 600) / 1000;
+      this.warningArr = this.warningArr.filter((w) => w.kind !== "chalk" && w.kind !== "aim");
+      this.warningArr.push({
+        kind: "shock",
+        x: 896,
+        y: 456,
+        w: Number(this.a5Pending?.params["hitboxW"] ?? 48),
+        h: Number(this.a5Pending?.params["hitboxH"] ?? 56),
+        timer: this.a5PendingTimer,
+        total: this.a5PendingTimer,
+      });
+      this.callbacks?.onAttack("a5");
+    }
+    if (dueA6) {
+      if (dueA5) {
+        // 同帧双预警会让玩家同时面对冲击波 + 踩踏，延后 0.35s 错开
+        this.giantA6 = BALANCE.level2.giantStagger;
+      } else {
+        this.giantA6 += BALANCE.attacks.a6.interval;
+        this.a6Pending = this.phase.attacks.find((a) => a.id === "a6") ?? null;
+        this.a6PendingTimer = (this.a6Pending?.telegraphMs ?? 800) / 1000;
         this.stompX = player.x;
         this.warningArr.push({
           kind: "stomp",
           x: this.stompX,
           y: 448,
-          w: Number(this.giantPending?.params["hitboxW"] ?? 96),
-          h: Number(this.giantPending?.params["hitboxH"] ?? 64),
-          timer: this.giantPendingTimer,
-          total: this.giantPendingTimer,
+          w: Number(this.a6Pending?.params["hitboxW"] ?? 96),
+          h: Number(this.a6Pending?.params["hitboxH"] ?? 64),
+          timer: this.a6PendingTimer,
+          total: this.a6PendingTimer,
         });
         this.callbacks?.onAttack("a6");
       }
@@ -553,7 +603,7 @@ export class ArenaBoss {
       const sr: Rect = { x: s.x, y: s.y, w: s.w, h: s.h };
       if (overlap(sr, playerRect)) {
         if (s.vx !== 0) {
-          this.callbacks?.onHurt(s.giant ? "giantWave" : "wave", 1, BALANCE.level2.hitCoinCost);
+          this.callbacks?.onHurt("wave", 1, BALANCE.level2.hitCoinCost);
           s.x = -999;
         } else if (!s.hit) {
           s.hit = true;
@@ -573,7 +623,8 @@ export class ArenaBoss {
       const b = this.bananaArr[i]!;
       b.life -= dt;
       const br: Rect = { x: b.x, y: b.y, w: 28, h: 14 };
-      if (overlap(br, playerRect)) {
+      if (overlap(br, playerRect) && this.bananaCooldown <= 0) {
+        this.bananaCooldown = 0.3;
         this.callbacks?.onHurt("banana", 0, 0);
       }
       if (b.life <= 0) this.bananaArr.splice(i, 1);
@@ -604,6 +655,16 @@ export class ArenaBoss {
         if (Math.abs(p.t - targetT) < Math.abs(best.t - targetT)) best = p;
       }
       xs.push(Math.max(60, Math.min(900, best.x)));
+    }
+    // 玩家站桩时 5 个采样会完全相同 → 只看到 1 个红圈、粉笔全叠一列；
+    // 过于集中时围绕中心轻轻铺开，保持攻击可读、可躲。
+    const spread = Math.max(...xs) - Math.min(...xs);
+    if (spread < 40) {
+      const center = xs.reduce((a, b) => a + b, 0) / Math.max(1, xs.length);
+      for (let i = 0; i < count; i++) {
+        const offset = (i - (count - 1) / 2) * 28;
+        xs[i] = Math.max(60, Math.min(900, center + offset));
+      }
     }
     return xs;
   }

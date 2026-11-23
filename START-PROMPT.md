@@ -1,5 +1,7 @@
 # 新对话提示词（复制下面的内容粘贴到新对话）
 
+> ⚠ 2026-11-23 晚 WIP 收尾请优先用 `START-PROMPT-WIP.md` / `HANDOFF-WIP.md`（本文件是长期维护提示词）。
+
 > 用法：新建一个对话，把下面代码块里的整段文字发给新对话里的 AI。
 > 这是**续作/维护**提示词，不是从零读设计文档开工。项目已经实现并上线。
 
@@ -23,7 +25,7 @@
 - 技术栈：Kaplay 3001 + TypeScript + Vite，纯前端静态站；运行时依赖只有 kaplay。
 - 两关可玩：第一关笑长视线战 + 45s 商店 + 潮夺枪 6s 过场；第二关 6 种攻击 + 巨大化 + 碰鞋 + CP1/CP2。
 - 手机横屏触控 + PC 键鼠；DOM 覆盖层 UI；canvas 只画世界；存档 localStorage key `cmi.save.v1`。
-- `pnpm test` 68 条全绿；`pnpm build` 通过；线上 GitHub Pages 已发布：
+- `pnpm test` 81 条全绿；`pnpm build` 通过；线上 GitHub Pages 已发布：
   https://idealismo10.github.io/WUHUADIxiaozhuan/
   仓库：https://github.com/idealismo10/WUHUADIxiaozhuan
 - 失败音效已处理：public/audio/fail.ogg / fail.mp3 / fail.m4a（源文件已降噪、−16 LUFS、mono 48k）。

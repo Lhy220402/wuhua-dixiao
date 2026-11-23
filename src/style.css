@@ -438,6 +438,11 @@ body {
   gap: 8px;
 }
 
+/* 右列靠右收拢：金币盒子不再被列宽拉满，窄屏下不会压到中央 BOSS 血条。 */
+.hud-right {
+  align-items: flex-end;
+}
+
 .hud-hearts {
   display: flex;
   gap: 4px;
@@ -653,7 +658,8 @@ body {
   display: none;
 }
 
-.exposure.warn .exposure-label {
+/* 暴露提示是 .exposure 的兄弟节点（hud-center 里），不是子节点。 */
+.exposure.warn ~ .exposure-label {
   display: block;
 }
 
@@ -1377,6 +1383,9 @@ body {
   touch-action: none;
   user-select: none;
   -webkit-user-select: none;
+  -webkit-touch-callout: none;
+  min-width: 44px;
+  min-height: 44px;
   transition:
     background-color var(--dur-100) linear,
     transform var(--dur-100) var(--ease-standard),
@@ -1428,7 +1437,8 @@ body {
 .touch-interact {
   width: 56px;
   height: 56px;
-  right: calc(var(--safe-r) + 16px + 56px + 12px);
+  /* 贴在大跳按钮左侧（80px 是跳按钮宽度），留 12px 间距，避免两个热区重叠。 */
+  right: calc(var(--safe-r) + 16px + 80px + 12px);
   bottom: calc(var(--safe-b) + 16px);
   font-size: 14px;
   display: none;
@@ -1446,7 +1456,8 @@ body {
   background: var(--c-board);
   display: grid;
   place-items: center;
-  padding: 24px;
+  padding: calc(var(--safe-t) + 16px) calc(var(--safe-r) + 20px) calc(var(--safe-b) + 16px)
+    calc(var(--safe-l) + 20px);
   pointer-events: auto;
   text-align: center;
 }
@@ -1598,7 +1609,7 @@ body {
     right: calc(var(--safe-r) + 16px);
   }
   .touch-interact {
-    right: calc(var(--safe-r) + 16px + 48px + 8px);
+    right: calc(var(--safe-r) + 16px + 64px + 12px);
   }
   .modal-card {
     padding: 16px 14px;
@@ -1831,5 +1842,125 @@ body.reduce-motion *::after {
   .screen-title {
     place-items: center;
     padding-top: 0;
+  }
+}
+
+/* 横屏短视口（667×375 / 844×390 等手机）：把弹窗、商店、设置压到一屏内，
+   按钮不再被裁掉；同时 .modal-card 仍保留滚动兜底。 */
+@media (max-height: 430px) {
+  .modal-scrim {
+    padding: calc(var(--safe-t) + 8px) calc(var(--safe-r) + 8px) calc(var(--safe-b) + 8px)
+      calc(var(--safe-l) + 8px);
+  }
+  .modal-card {
+    max-height: calc(100dvh - 16px);
+    padding: 12px 14px;
+  }
+  .modal-title {
+    font-size: var(--fs-20);
+    margin-bottom: 4px;
+  }
+  .modal-sub {
+    margin-bottom: 8px;
+    font-size: var(--fs-12);
+  }
+  .modal-stats {
+    margin-bottom: 8px;
+    gap: 12px;
+    font-size: var(--fs-12);
+  }
+  .modal-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+  .modal-actions.row {
+    display: flex;
+  }
+  .modal-actions .btn {
+    min-height: 44px;
+    padding: 0 8px;
+    font-size: var(--fs-14);
+  }
+  .modal-actions > .btn:only-child {
+    grid-column: 1 / -1;
+  }
+  .modal-hint {
+    margin-top: 8px;
+  }
+  .stamp {
+    width: 56px;
+    height: 56px;
+    font-size: var(--fs-16);
+    margin-bottom: 8px;
+  }
+  .clear-title {
+    font-size: var(--fs-20);
+    margin-bottom: 8px;
+  }
+  .clear-stats {
+    margin-bottom: 8px;
+    gap: 6px;
+  }
+  .clear-stat {
+    padding: 4px;
+  }
+  .clear-stat b {
+    font-size: var(--fs-16);
+  }
+  .settings-row {
+    padding: 4px 0;
+    font-size: var(--fs-12);
+  }
+  .settings-select {
+    min-height: 36px;
+    font-size: var(--fs-12);
+  }
+  .settings-range {
+    width: 104px;
+  }
+  .settings-check {
+    width: 20px;
+    height: 20px;
+  }
+  .shop-sheet {
+    max-height: calc(100dvh - 8px);
+    padding: 10px 12px calc(var(--safe-b) + 10px);
+  }
+  .shop-head {
+    margin-bottom: 8px;
+  }
+  .shop-title {
+    font-size: var(--fs-16);
+  }
+  .shop-item {
+    gap: 8px;
+    padding: 8px;
+  }
+  .shop-icon {
+    width: 48px;
+    height: 48px;
+  }
+  .shop-foot {
+    margin-top: 8px;
+  }
+  .shop-note {
+    margin-top: 4px;
+  }
+  .dialogue-box {
+    padding: 14px 12px 10px;
+  }
+  .dialogue-text {
+    min-height: 44px;
+  }
+}
+
+/* 窄屏横屏（<720px 宽）时收窄顶部中央血条，避免压到左右 HUD。 */
+@media (max-width: 720px) {
+  .hud-center {
+    width: min(220px, 32vw);
+  }
+  .boss-bar {
+    width: min(300px, 34vw);
   }
 }

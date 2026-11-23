@@ -149,22 +149,31 @@ export class InputSystem {
       this.recomputeDirection();
       if (pointerIds.size === 0) el.classList.remove("held");
     };
+    // 指针捕获失败（旧 Safari / 合成事件）时，手指滑出按钮也要释放，避免“粘键”。
+    const leave = (ev: PointerEvent) => {
+      if (el.hasPointerCapture?.(ev.pointerId)) return;
+      up(ev);
+    };
     el.addEventListener("pointerdown", down);
     el.addEventListener("pointerup", up);
     el.addEventListener("pointercancel", up);
     el.addEventListener("lostpointercapture", up);
+    el.addEventListener("pointerleave", leave);
     return () => {
       el.removeEventListener("pointerdown", down);
       el.removeEventListener("pointerup", up);
       el.removeEventListener("pointercancel", up);
       el.removeEventListener("lostpointercapture", up);
+      el.removeEventListener("pointerleave", leave);
     };
   }
 
   bindActionButton(el: HTMLElement, action: ActionId): () => void {
+    const pointerIds = new Set<number>();
     const down = (ev: PointerEvent) => {
       ev.preventDefault();
       ev.stopPropagation();
+      pointerIds.add(ev.pointerId);
       this.pointerActions.set(ev.pointerId, action);
       this.heldSet.add(action);
       this.pressedSet.add(action);
@@ -174,22 +183,29 @@ export class InputSystem {
     };
     const up = (ev: PointerEvent) => {
       const prev = this.pointerActions.get(ev.pointerId);
+      pointerIds.delete(ev.pointerId);
       this.pointerActions.delete(ev.pointerId);
       this.buttonHolds.delete(ev.pointerId.toString());
-      if (prev) {
-        this.recomputeHeld();
-        el.classList.remove("held");
-      }
+      if (prev) this.recomputeHeld();
+      // 即使 clearAll() 已经清过指针表，也要还原按钮的高亮，避免卡在“按下”外观。
+      if (pointerIds.size === 0) el.classList.remove("held");
+    };
+    // 指针捕获失败（旧 Safari / 合成事件）时，手指滑出按钮也要释放，避免按住射击不松。
+    const leave = (ev: PointerEvent) => {
+      if (el.hasPointerCapture?.(ev.pointerId)) return;
+      up(ev);
     };
     el.addEventListener("pointerdown", down);
     el.addEventListener("pointerup", up);
     el.addEventListener("pointercancel", up);
     el.addEventListener("lostpointercapture", up);
+    el.addEventListener("pointerleave", leave);
     return () => {
       el.removeEventListener("pointerdown", down);
       el.removeEventListener("pointerup", up);
       el.removeEventListener("pointercancel", up);
       el.removeEventListener("lostpointercapture", up);
+      el.removeEventListener("pointerleave", leave);
     };
   }
 

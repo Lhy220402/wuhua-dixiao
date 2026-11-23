@@ -114,6 +114,7 @@ wuhua-dixiao/
 | giantThreshold | 40 | HP | Boss ≤40 进入巨大化阶段 |
 | giant.bulletMultiplier | 0.25 | × | 巨大化后子弹刮痧（4→1） |
 | giant.shockwaveInterval | 2.0 | s | 冲击波间隔 |
+| giant.stagger | 0.35 | s | A5/A6 同帧到点时 A6 预警顺延（避免同帧双杀） |
 | giant.shoeHitbox | 192×64 | px | 碰到鞋即胜利（x640–832 / y448–512，阶段 2 过场结束 1s 后激活） |
 | checkpoint | 按阶段 | — | 失败回到本阶段开始（P1/P2），不清空已看剧情 |
 

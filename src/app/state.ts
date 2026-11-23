@@ -80,6 +80,44 @@ export interface RuntimeState {
   level2StartCoins: number;
 }
 
+export interface ResumePlan {
+  levelId: LevelId;
+  roomIndex: number;
+  /** 第一关 R4 买枪后过场被刷新打断：重进后补播夺枪过场 */
+  replayGunCutscene: boolean;
+  /** 直接进入第二关时是否补发 15000 开局金币（防止低金币直接开打） */
+  grantStipend: boolean;
+}
+
+/**
+ * 继续游戏时决定从哪恢复（docs/20 §2.5 + 存档软锁修复）：
+ * - 第一关 R4 已买枪但还没拿到枪（过场中刷新）→ 回 R4 并补播过场；
+ * - 第一关 R4 已通关 / 枪已入包（过场已完成但还没点继续）→ 直接进第二关并补发开局金币；
+ * - 其它情况按 currentLevel/currentRoom 恢复。
+ *
+ * 用 npcFlags.l1_cleared 标记第一关是否已结算（buyGun 时显式写 false，markLevelComplete 写 true）：
+ * 5.3s grantItem 到 6.0s markLevelComplete 之间的 0.7s 窗口里，枪已入包但还没记通关；
+ * 新档有 marker=false → 回 R4 补播，避免少记通关/跳过结算；旧版本存档没有该键时用
+ * 「有枪 + 已看过夺枪过场」推断已通关。
+ */
+export function planResume(save: SaveV1): ResumePlan {
+  const levelId: LevelId = save.progress.currentLevel === 2 ? "level2" : "level1";
+  const roomIndex = save.progress.currentRoom ?? 0;
+  if (levelId === "level1" && roomIndex === 3 && save.progress.shopPurchased) {
+    const hasGun = save.progress.items.some((i) => i.itemId === "bullet_gun");
+    const flags = save.progress.npcFlags;
+    const markerKnown = Object.prototype.hasOwnProperty.call(flags, "l1_cleared");
+    const cleared =
+      flags["l1_cleared"] === true ||
+      (!markerKnown && hasGun && save.progress.seenCutscenes.includes("l1_gun_gag"));
+    if (cleared && hasGun) {
+      return { levelId: "level2", roomIndex: 0, replayGunCutscene: false, grantStipend: true };
+    }
+    return { levelId, roomIndex, replayGunCutscene: true, grantStipend: false };
+  }
+  return { levelId, roomIndex, replayGunCutscene: false, grantStipend: false };
+}
+
 export function createRuntime(save: SaveV1): RuntimeState {
   const levelId = (save.progress.currentLevel === 2 ? "level2" : "level1") as LevelId;
   return {

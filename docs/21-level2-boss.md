@@ -130,7 +130,7 @@ Boss HP 被扣到 ≤40（G）时立即进入转阶段过场，历时 3.0s：冻
 | L2-06 | A3 冲击波速度 / 高度 | 380 / 40 | px/s, px | 高度 >56 时站讲台顶也会被扫到 |
 | L2-07 | A4 香蕉皮 数量 / 存活 / 滑倒 | 3 / 6 / 0.9s 滑行 300px | 个, s | 滑倒越久越像惩罚 |
 | L2-08 | 转阶段过场 | 3.0（冻结 0.4 + 气泡 0.8 + 变大 1.2 + 站定 0.6） | s | 可跳过，0.3s 保护 |
-| L2-09 | A6 踩踏间隔 / 判定 | 3.0 / 96×64 | s, px | 与 A5 错开，避免同帧双杀 |
+| L2-09 | A6 踩踏间隔 / 判定 | 3.0 / 96×64 / 同帧顺延 0.35 | s, px, s | 与 A5 错开，避免同帧双杀 |
 | L2-10 | 无敌帧 / 受击闪烁 | 1.2 / 0.2 | s | 太短会被连击，太长会无脑 |
 | L2-11 | 鞋判定框 / 激活延迟 | 192×64 / 1.0 | px, s | 太早激活会出现「转阶段瞬赢」 |
 | L2-12 | 金币上限 / 存活 / 磁吸 | 5 枚 / 8s / 64px | 个, s, px | 上限低时命中收益被吞 |
@@ -250,7 +250,7 @@ PC：A/D 或 ←/→ 移动，Space/W/↑ 跳跃，J 或鼠标左键射击（可
 | 接收 | `game:level-start` | `{level:2, checkpoint:'cp1'}` | 进入第二关 |
 | 发出 | `game:boss-phase` | `{bossId:'boss2', phase:'p1'\|'p2_giant'}` | 登场 / 巨大化开始 |
 | 发出 | `game:cutscene-start` / `game:cutscene-end` | `{id:'l2_giant'\|'l2_shoe', skippable:true}` | 转阶段 / 碰鞋 |
-| 发出 | `game:boss-defeated` | `{bossId:'boss2', by:'shoe'}` | 碰鞋帧 |
+| 发出 | `game:boss-defeated` | `{bossId:'boss2', method:'shoe'}` | 碰鞋帧 |
 | 发出 | `game:player-damaged` | `{hp, coins, cause:'homing'\|'chalk'\|'wave'\|'banana'\|'stomp'\|'jiasheng'}` | 每次受击 |
 | 发出 | `game:coin-changed` | `{delta:+2500\|-5000, coins, reason:'pickup'\|'hit'}` | 命中掉落拾取 / 受击扣款 |
 | 发出 | `game:item-acquired` | `{itemId:'bullet_gun', fallback:true}` | 仅缺枪兜底 |

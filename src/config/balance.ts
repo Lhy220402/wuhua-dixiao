@@ -164,6 +164,8 @@ export const BALANCE = {
     giantBulletMultiplier: 0.25,
     giantShockwaveInterval: 2.0,
     giantStompInterval: 3.0,
+    /** A5/A6 同帧到点时，A6 预警顺延的秒数（避免同帧双杀） */
+    giantStagger: 0.35,
     shoeX: 640,
     shoeY: 448,
     shoeW: 192,

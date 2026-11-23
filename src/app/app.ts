@@ -73,6 +73,7 @@ import {
   createRuntime,
   hasItem,
   markSeenCutscene,
+  planResume,
   snapshotCheckpoint,
   type RuntimeState,
 } from "./state";
@@ -216,6 +217,8 @@ export class GameApp {
   private checkpointToastShown = new Set<string>();
   private initialLoad = true;
   private level2StipendGranted = false;
+  /** 第一关买枪过场被刷新打断：进 R4 后补播（避免无枪、无商店、无出口的软锁） */
+  private pendingGunCutscene = false;
   private cutsceneVisual: CutsceneVisual = emptyCutsceneVisual();
   private cutscenePost: "none" | "level1-clear" | "level2-clear" | "resume" = "none";
   private xiaomingNextBubble = 0;
@@ -372,6 +375,7 @@ export class GameApp {
   }
 
   private goTitle(): void {
+    this.pendingGunCutscene = false;
     this.overlays.hideAll();
     this.shopPanel.hide();
     this.dialogueBox.close();
@@ -399,6 +403,7 @@ export class GameApp {
   }
 
   private newGame(): void {
+    this.pendingGunCutscene = false;
     this.audio.unlock();
     this.requestFullscreen(true);
     const settings = { ...this.save.settings };
@@ -414,10 +419,10 @@ export class GameApp {
     this.audio.unlock();
     this.requestFullscreen(true);
     this.overlays.hideTitle();
-    const levelId: LevelId = this.save.progress.currentLevel === 2 ? "level2" : "level1";
-    const roomIndex = this.save.progress.currentRoom ?? 0;
+    const plan = planResume(this.save);
     this.run = createRuntime(this.save);
-    this.startLevel(levelId, { grantStipend: false, roomIndex });
+    this.pendingGunCutscene = plan.replayGunCutscene;
+    this.startLevel(plan.levelId, { grantStipend: plan.grantStipend, roomIndex: plan.roomIndex });
   }
 
   private startLevel(
@@ -501,6 +506,13 @@ export class GameApp {
       roomId: this.room?.id ?? "",
       index: this.run.roomIndex,
     });
+    if (this.pendingGunCutscene) {
+      this.pendingGunCutscene = false;
+      // 补播时把玩家放回购买点，让潮冲向玩家、枪抛回同一位置
+      this.run.player.x = BALANCE.level1.hallShopX;
+      this.run.player.y = BALANCE.level1.hallShopY;
+      this.startGunCutscene();
+    }
   }
 
   private loadRoom(levelId: LevelId, index: number, spawnOverride?: Vec): void {
@@ -852,7 +864,7 @@ export class GameApp {
       onHurt: (source, hp, coins) => this.onArenaHurt(source, hp, coins),
       onBubble: (text, ms) => this.overlays.showWorldBubble(text, 816, 200, ms),
       onAttack: (id) => {
-        if (id === "a2" || id === "a6") this.audio.playSfx("sfx.warning");
+        if (id === "a2" || id === "a5" || id === "a6") this.audio.playSfx("sfx.warning");
         if (id === "a1" || id === "a3" || id === "a4") this.audio.playSfx("sfx.laser");
       },
       onShoeNear: () => {
@@ -1294,6 +1306,8 @@ export class GameApp {
       price: BALANCE.level1.shopPrice,
     });
     this.events.emit("game:coin-changed", { coins: this.run.coins, delta: -BALANCE.level1.shopPrice, reason: "purchase" });
+    // 显式标记「第一关尚未结算」，用于 5.3s~6.0s 窗口刷新时回 R4 补播而不是误判已通关
+    this.run.npcFlags["l1_cleared"] = false;
     this.persistNow();
     window.setTimeout(() => this.startGunCutscene(), 220);
   }
@@ -1350,7 +1364,7 @@ export class GameApp {
     if (!this.fsm.goState("Cutscene")) return;
     this.cutscenePost = "resume";
     this.resetCutsceneVisual();
-    this.run.giant = true;
+    // 巨大化状态在 giantGrow 步骤（1.2s）才生效：避免讲台提前碎、HUD 提前锁
     this.audio.playSfx("sfx.phase");
     this.audio.duckBgm(0.35, 200);
     this.events.emit("game:cutscene-start", { cutsceneId: def.id });
@@ -1560,6 +1574,7 @@ export class GameApp {
       this.run.clears.level1 = (this.run.clears.level1 ?? 0) + 1;
       this.run.seenCutscenes.push("l1_gun_gag");
       this.run.bossDefeated = true;
+      this.run.npcFlags["l1_cleared"] = true;
       this.save.progress.unlockedLevel = 2;
       this.persistNow();
       this.events.emit("game:level-complete", {
@@ -1730,6 +1745,11 @@ export class GameApp {
     this.overlays.hideWorldBubble();
     this.run.victory = false;
     const isLevel2 = this.level.id === "level2";
+    const retryCheckpointId = isLevel2
+      ? this.run.checkpoint?.bossPhase === "p2_giant" || this.run.giant
+        ? "cp2"
+        : "cp1"
+      : (this.run.checkpoint?.label ?? `room:${this.run.roomId}`);
     if (isLevel2 && this.run.checkpoint) {
       const cp = this.run.checkpoint;
       applyCheckpoint(this.run, cp);
@@ -1791,7 +1811,7 @@ export class GameApp {
     this.overlays.toast(manual ? "重试本房间" : "再来一次", "info", 1200);
     this.events.emit("game:retry", {
       levelId: this.level.id,
-      checkpointId: this.run.checkpoint?.label ?? "cp1",
+      checkpointId: retryCheckpointId,
     });
     this.persistSoon();
   }

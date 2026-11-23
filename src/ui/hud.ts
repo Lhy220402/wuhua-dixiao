@@ -4,6 +4,16 @@ import type { LevelDef } from "../content/types";
 import type { RuntimeState } from "../app/state";
 import { coinNode, el, gunGlyph, heartNode, setClass } from "./dom";
 
+/** 浏览器是否可能支持全屏（iPhone Safari 没有元素全屏，就别显示无用的按钮）。 */
+function canRequestFullscreen(): boolean {
+  if (typeof document === "undefined") return false;
+  const node = document.documentElement as unknown as {
+    requestFullscreen?: () => Promise<void> | void;
+    webkitRequestFullscreen?: () => Promise<void> | void;
+  };
+  return typeof node.requestFullscreen === "function" || typeof node.webkitRequestFullscreen === "function";
+}
+
 export interface HudBossInfo {
   name: string;
   hp: number;
@@ -94,6 +104,10 @@ export class Hud {
       ev.stopPropagation();
       this.onFullscreen();
     });
+    // iPhone Safari 等不支持元素全屏的浏览器：按钮点了只会弹提示，直接不显示。
+    if (!canRequestFullscreen()) {
+      this.fullscreenBtn.classList.add("hidden");
+    }
     const actions = el("div", { class: "hud-actions" }, [this.itemBox, this.fullscreenBtn, this.pauseBtn]);
     const left = el("div", { class: "hud-left" }, [
       this.heartsBox,

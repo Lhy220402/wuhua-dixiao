@@ -90,3 +90,123 @@ describe("ArenaBoss 攻击判定修复", () => {
     expect(stomp.x + stomp.w / 2).toBeCloseTo(warnedX, 0);
   });
 });
+
+describe("ArenaBoss 审计问题回归", () => {
+  it("玩家站桩时 A2 的 5 个落点也会铺开，不叠成一列", () => {
+    const boss = new ArenaBoss(BOSS2, DESKS);
+    advanceUntil(
+      boss,
+      () => boss.state.attackId === "a2" && boss.state.telegraph,
+      { playerAt: () => 480, maxSeconds: 20 },
+    );
+    const xs = boss.state.warnings.filter((w) => w.kind === "chalk").map((w) => w.x);
+    expect(new Set(xs.map((x) => Math.round(x))).size).toBeGreaterThanOrEqual(4);
+  });
+
+  it("巨大化 A5/A6 的预警间隔不再被 telegraph 冻结拉长", () => {
+    const times = new Map<string, number[]>();
+    const cbs: ArenaCallbacks = {
+      ...noop,
+      onAttack: (id) => {
+        if (id === "a5" || id === "a6") {
+          const arr = times.get(id) ?? [];
+          arr.push(t);
+          times.set(id, arr);
+        }
+      },
+    };
+    let t = 0;
+    const boss = new ArenaBoss(BOSS2, DESKS);
+    boss.beginGiant();
+    for (let i = 0; i < 10 / DT; i++) {
+      t += DT;
+      boss.update(DT, { x: 480, y: 512 }, cbs);
+    }
+    const a5 = times.get("a5") ?? [];
+    const a6 = times.get("a6") ?? [];
+    expect(a5.length).toBeGreaterThanOrEqual(3);
+    expect(a6.length).toBeGreaterThanOrEqual(2);
+    for (let i = 1; i < a5.length; i++) {
+      expect(a5[i]! - a5[i - 1]!).toBeGreaterThan(1.7);
+      expect(a5[i]! - a5[i - 1]!).toBeLessThan(2.3);
+    }
+    for (let i = 1; i < a6.length; i++) {
+      expect(a6[i]! - a6[i - 1]!).toBeGreaterThan(2.8);
+      expect(a6[i]! - a6[i - 1]!).toBeLessThan(3.8);
+    }
+  });
+
+  it("打到 40 触发巨大化的那一发不额外掉 2500 金币", () => {
+    const boss = new ArenaBoss(BOSS2, DESKS);
+    boss.debugSetHp(BALANCE.level2.giantThreshold + BALANCE.level2.bulletDamage);
+    const res = boss.hitByBullet();
+    expect(res.triggerGiant).toBe(true);
+    expect(res.dropCoin).toBe(false);
+    expect(res.hp).toBe(BALANCE.level2.giantThreshold);
+  });
+
+  it("CP2 重试后不再重复弹「别碰我鞋」气泡", () => {
+    let bubbleCount = 0;
+    const cbs: ArenaCallbacks = {
+      ...noop,
+      onShoeNear: () => {
+        bubbleCount += 1;
+      },
+    };
+    const boss = new ArenaBoss(BOSS2, DESKS);
+    boss.restoreGiant();
+    for (let i = 0; i < 120; i++) boss.update(DT, { x: 700, y: 512 }, cbs);
+    expect(bubbleCount).toBe(0);
+  });
+});
+
+
+describe("ArenaBoss 巨型攻击长时间程不变量", () => {
+  function simulateGiant(seconds: number, dt: number) {
+    const boss = new ArenaBoss(BOSS2, DESKS);
+    boss.beginGiant();
+    const a5: number[] = [];
+    const a6: number[] = [];
+    let prev5 = 0;
+    let prev6 = 0;
+    let t = 0;
+    for (let i = 0; i < seconds / dt; i++) {
+      t += dt;
+      boss.update(dt, { x: 480, y: 512 }, noop);
+      const st = boss.state;
+      const n5 = st.shockwaves.filter((s) => s.vx !== 0).length;
+      const n6 = st.shockwaves.filter((s) => s.vx === 0).length;
+      if (n5 > prev5) a5.push(t);
+      if (n6 > prev6) a6.push(t);
+      prev5 = n5;
+      prev6 = n6;
+    }
+    return { a5, a6 };
+  }
+
+  it("60s 内 A5≈2s/A6≈3s，任意两发巨招 spawn 不贴近（>=0.25s）", () => {
+    const { a5, a6 } = simulateGiant(60, 1 / 60);
+    expect(a5.length).toBeGreaterThanOrEqual(20);
+    expect(a6.length).toBeGreaterThanOrEqual(10);
+    for (let i = 1; i < a5.length; i++) {
+      expect(a5[i]! - a5[i - 1]!).toBeGreaterThan(1.9);
+      expect(a5[i]! - a5[i - 1]!).toBeLessThan(2.15);
+    }
+    for (let i = 1; i < a6.length; i++) {
+      expect(a6[i]! - a6[i - 1]!).toBeGreaterThan(2.9);
+      expect(a6[i]! - a6[i - 1]!).toBeLessThan(3.6);
+    }
+    const all = [...a5, ...a6].sort((x, y) => x - y);
+    for (let i = 1; i < all.length; i++) {
+      expect(all[i]! - all[i - 1]!).toBeGreaterThanOrEqual(0.25);
+    }
+  });
+
+  it("低帧 50ms 下 20s 内不出现同帧双 spawn", () => {
+    const { a5, a6 } = simulateGiant(20, 0.05);
+    const all = [...a5, ...a6].sort((x, y) => x - y);
+    for (let i = 1; i < all.length; i++) {
+      expect(all[i]! - all[i - 1]!).toBeGreaterThanOrEqual(0.12);
+    }
+  });
+});
