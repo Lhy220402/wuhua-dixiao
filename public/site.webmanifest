@@ -1,0 +1,26 @@
+{
+  "name": "物化帝笑传",
+  "short_name": "物化帝",
+  "description": "iwanna 式校园梗平台跳跃 Boss 战：第一关笑长的凝视，第二关消耗战。",
+  "lang": "zh-CN",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "landscape",
+  "background_color": "#0B1114",
+  "theme_color": "#0B1114",
+  "icons": [
+    {
+      "src": "./icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "./icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

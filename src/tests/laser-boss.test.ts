@@ -43,6 +43,8 @@ interface BossInfo {
   timer: number;
   pattern: string;
   beamX: number[];
+  haste: number;
+  impatient: boolean;
 }
 
 const info = (boss: LaserBoss): BossInfo => boss.debugInfo as unknown as BossInfo;
@@ -191,6 +193,51 @@ describe("LaserBoss P3 凝视锁定", () => {
   });
 });
 
+describe("LaserBoss 商店 60s 不耐烦加速", () => {
+  it("每轮提速 10%，到 2.4s 下限后不再加；取消后恢复常速", () => {
+    const p1: LaserPatternDef = {
+      id: "p1",
+      label: "测试横扫",
+      kind: "sweep",
+      startX: BALANCE.level1.p1StartX,
+      endX: BALANCE.level1.p1EndX,
+      speed: BALANCE.level1.p1Speed,
+    };
+    const boss = makeBoss({
+      blinkPeriodMs: 1_000_000,
+      patterns: [p1],
+      cycle: ["p1", "p1", "p1", "p1"],
+    });
+    expect(info(boss).haste).toBe(1);
+    boss.setImpatient(true);
+    expect(info(boss).impatient).toBe(true);
+
+    const starts: number[] = [];
+    let prevMode = info(boss).mode;
+    let t = 0;
+    while (starts.length < 8 && t < 60) {
+      t += DT;
+      boss.update(DT, 480);
+      const mode = info(boss).mode;
+      if (mode === "telegraph" && prevMode === "idle") starts.push(t);
+      prevMode = mode;
+    }
+    expect(starts.length).toBeGreaterThanOrEqual(6);
+
+    const intervals = starts.slice(1).map((v, i) => v - starts[i]!);
+    // 每轮间隔递减（前几轮明显），最终贴近 2.4~2.6s 下限
+    expect(intervals[1]!).toBeLessThan(intervals[0]!);
+    expect(intervals[2]!).toBeLessThan(intervals[1]!);
+    expect(intervals[intervals.length - 1]!).toBeGreaterThan(2.3);
+    expect(intervals[intervals.length - 1]!).toBeLessThan(2.65);
+    expect(info(boss).haste).toBeCloseTo(4.0 / BALANCE.level1.shopImpatientMinPeriod, 2);
+
+    boss.setImpatient(false);
+    expect(info(boss).haste).toBe(1);
+    expect(info(boss).impatient).toBe(false);
+  });
+});
+
 describe("LaserBoss 眨眼 / 挂牌", () => {
   it("眨眼时光束判定关闭，闭眼结束后恢复可开火状态", () => {
     const boss = makeBoss({
@@ -211,7 +258,7 @@ describe("LaserBoss 眨眼 / 挂牌", () => {
     expect(info(boss).mode).toBe("sweep");
     expect(boss.state.beams).toHaveLength(0);
 
-    tick(boss, BALANCE.level1.blinkWindow + 0.05);
+    tick(boss, 1.2 + 0.05);
     expect(boss.state.blink).toBe(false);
     expect(info(boss).mode).toBe("sweep");
     expect(boss.state.beams.length).toBeGreaterThan(0);

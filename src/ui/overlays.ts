@@ -47,6 +47,7 @@ export class Overlays {
   private intro: HTMLElement | null = null;
   private pause: HTMLElement | null = null;
   private fail: HTMLElement | null = null;
+  private failRaf: number | null = null;
   private clear: HTMLElement | null = null;
   private tbc: HTMLElement | null = null;
   private settings: HTMLElement | null = null;
@@ -176,13 +177,27 @@ export class Overlays {
       stats: string;
       hint: string;
       levelId: string;
+      /** 死亡计数：失败页大数字 + 500ms 计数滚动（减少动效时直接显示终值） */
+      deaths?: number;
     },
     callbacks: FailCallbacks,
   ): void {
     this.hideFail();
     const retry = button("重试", "btn-primary", callbacks.onRetry);
     const title = button("返回标题", "btn-secondary", callbacks.onTitle);
+    const numEl =
+      opts.deaths === undefined
+        ? null
+        : el("span", { class: "death-big-num", text: String(opts.deaths) });
+    const deathBig =
+      numEl === null
+        ? null
+        : el("div", { class: "death-big" }, [
+            numEl,
+            el("span", { class: "death-big-label", text: "死亡次数" }),
+          ]);
     const card = el("div", { class: "modal-card" }, [
+      deathBig,
       el("h2", { class: "modal-title danger", text: opts.title ?? "败了" }),
       el("p", { class: "modal-sub", text: opts.reason }),
       el("div", { class: "modal-stats" }, [el("span", { text: opts.stats })]),
@@ -193,10 +208,43 @@ export class Overlays {
     const modal = el("div", { class: "modal-scrim" }, [card]);
     this.root.append(modal);
     this.fail = modal;
+    // 死亡数字滚动：0 → N，配合 CSS 的放大回弹；减少动效/无 rAF 时直接显示终值
+    if (numEl !== null && opts.deaths !== undefined && !this.prefersReducedMotion()) {
+      const target = opts.deaths;
+      const duration = 480;
+      const startedAt = performance.now();
+      const tick = (now: number): void => {
+        if (this.fail !== modal) {
+          this.failRaf = null;
+          return;
+        }
+        const u = Math.min(1, (now - startedAt) / duration);
+        const eased = 1 - Math.pow(1 - u, 3);
+        numEl.textContent = String(Math.round(target * eased));
+        if (u < 1) {
+          this.failRaf = requestAnimationFrame(tick);
+        } else {
+          numEl.textContent = String(target);
+          this.failRaf = null;
+        }
+      };
+      this.failRaf = requestAnimationFrame(tick);
+    }
     retry.focus({ preventScroll: true });
   }
 
+  private prefersReducedMotion(): boolean {
+    return (
+      document.body.classList.contains("reduce-motion") ||
+      Boolean(window.matchMedia?.("(prefers-reduced-motion: reduce)").matches)
+    );
+  }
+
   hideFail(): void {
+    if (this.failRaf !== null) {
+      cancelAnimationFrame(this.failRaf);
+      this.failRaf = null;
+    }
     this.fail?.remove();
     this.fail = null;
   }

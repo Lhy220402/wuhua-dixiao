@@ -124,7 +124,8 @@ export const BALANCE = {
     gazeRecoverDuration: 1.0,
     gazeTelegraphDuration: 0.8,
     blinkPeriod: 4.0,
-    blinkWindow: 1.2,
+    /** 眨眼安全窗；2026-11-23 用户要求提高 Boss 难度：1.2s → 1.0s */
+    blinkWindow: 1.0,
     blinkPhaseOffset: 0.7,
     patternCycle: ["p1", "p1", "p2", "p3"] as readonly string[],
     p1StartX: 160,
@@ -132,7 +133,8 @@ export const BALANCE = {
     p1Speed: 340,
     p2Speed: 300,
     p3TrackSpeed: 240,
-    p3LockHold: 4.0, // docs 原值 1.2s；光束锁死后停住不再追人，4.0s 足够让站着不动的玩家被 2.5s 读条打满（playtest 调参）
+    /** P3 锁定停留；2026-11-23 用户要求提高难度：4.0s → 4.5s（standing still is lethal） */
+    p3LockHold: 4.5, // docs 原值 1.2s；光束锁死后停住不再追人，4.5s 让站着不动的玩家被 2.5s 读条打满（playtest 调参）
     boss1Hp: 999,
     boss1EyeLeftX: 432,
     boss1EyeRightX: 512,
@@ -186,7 +188,8 @@ export const BALANCE = {
     deskW: 96,
     deskH: 64,
     deskY: 512,
-    attackGap: 1.6,
+    /** 攻击轮间隔；2026-11-23 用户要求提高 Boss 难度：1.6s → 1.2s */
+    attackGap: 1.2,
     introDuration: 1.2,
     introBubble: 1.8,
     phaseCutsceneDuration: 3.0,
@@ -224,7 +227,8 @@ export const BALANCE = {
   attacks: {
     a1: {
       telegraph: 0.6,
-      count: 3,
+      /** 2026-11-23 提高难度：3 → 4 发 */
+      count: 4,
       interval: 0.25,
       speed: 260,
       turnRate: 120,
@@ -236,7 +240,8 @@ export const BALANCE = {
     },
     a2: {
       telegraph: 0.7,
-      count: 5,
+      /** 2026-11-23 提高难度：5 → 6 根 */
+      count: 6,
       interval: 0.12,
       fallSpeed: 700,
       hitbox: 16,

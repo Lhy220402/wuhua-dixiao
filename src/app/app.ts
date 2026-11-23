@@ -941,6 +941,8 @@ export class GameApp {
     if (!this.room) return;
     if (this.level.id !== "level1") return;
     if (this.laserBoss) {
+      // 商店 60s 不买：笑长不耐烦，攻击轮每轮提速 10%，下限 2.4s（docs/20 L1-10）
+      this.laserBoss.setImpatient(this.isShopImpatient());
       this.laserBoss.update(dt, this.run.player.x);
       const state = this.laserBoss.state;
       let visible = false;
@@ -976,6 +978,16 @@ export class GameApp {
         this.events.emit("game:buff-ended", { buffId: key });
       }
     }
+  }
+
+  private isShopImpatient(): boolean {
+    return (
+      this.level.id === "level1" &&
+      this.room?.id === "l1-r4" &&
+      this.run.shopSpawned &&
+      !this.run.shopPurchased &&
+      this.run.shopTimer > BALANCE.level1.shopImpatientAfter
+    );
   }
 
   private updateShopTimer(dt: number): void {
@@ -1572,7 +1584,7 @@ export class GameApp {
   private markLevelComplete(level: "level1" | "level2"): void {
     if (level === "level1") {
       this.run.clears.level1 = (this.run.clears.level1 ?? 0) + 1;
-      this.run.seenCutscenes.push("l1_gun_gag");
+      markSeenCutscene(this.run, "l1_gun_gag");
       this.run.bossDefeated = true;
       this.run.npcFlags["l1_cleared"] = true;
       this.save.progress.unlockedLevel = 2;
@@ -1726,6 +1738,7 @@ export class GameApp {
         title: "败了",
         reason: reasonText,
         stats: `本关用时 ${formatTime(this.run.runElapsed * 1000)} · 死亡 ${this.run.deaths} 次`,
+        deaths: this.run.deaths,
         hint,
         levelId: this.level.id,
       },

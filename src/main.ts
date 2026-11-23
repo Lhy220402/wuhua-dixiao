@@ -47,7 +47,28 @@ window.addEventListener("unhandledrejection", (ev) => {
   showFatal(String(ev.reason?.stack ?? ev.reason));
 });
 
+/**
+ * 游戏没有需要复制的文本：关掉选择/复制/右键菜单/拖拽/iOS 长按菜单，
+ * 避免手机上长按 HUD 或按钮时弹出系统菜单、PC 上误按 Ctrl+C 选中文字。
+ */
+function disableCopyAndMisTouch(): void {
+  const stop = (ev: Event): void => ev.preventDefault();
+  for (const type of ["copy", "cut", "contextmenu", "selectstart", "dragstart"]) {
+    document.addEventListener(type, stop, { capture: true });
+  }
+  document.addEventListener(
+    "keydown",
+    (ev) => {
+      if ((ev.ctrlKey || ev.metaKey) && /^(c|x)$/i.test(ev.key)) ev.preventDefault();
+    },
+    { capture: true },
+  );
+  // iOS Safari 的捏合手势（user-scalable=no 在部分版本不生效）
+  document.addEventListener("gesturestart", stop, { capture: true });
+}
+
 function main(): void {
+  disableCopyAndMisTouch();
   const canvas = document.getElementById("game-canvas") as HTMLCanvasElement | null;
   if (!canvas) {
     showBootError("页面缺少画布，刷新再试。");

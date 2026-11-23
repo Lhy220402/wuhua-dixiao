@@ -61,6 +61,9 @@ export class LaserBoss {
   private active = false;
   private wasActiveBeforeBlink = false;
   private frozen = false;
+  /** 商店 60s 不耐烦加速：>1 时整个状态机（含预警/扫射/眨眼）按比例加快。 */
+  private haste = 1;
+  private impatient = false;
 
   constructor(def: BossDef, eyes: Vec[], plaques: Rect[]) {
     this.def = def;
@@ -95,6 +98,8 @@ export class LaserBoss {
       pattern: this.pattern.id,
       beamX: this.beamX,
       firingEyes: this.firingEyes,
+      haste: this.haste,
+      impatient: this.impatient,
     };
   }
 
@@ -131,6 +136,8 @@ export class LaserBoss {
     this.blinkRemain = 0;
     this.beamX = this.eyes.map(() => LAYOUT.cameraX);
     this.frozen = false;
+    this.haste = 1;
+    this.impatient = false;
     this.beginIdle();
   }
 
@@ -142,11 +149,39 @@ export class LaserBoss {
     this.frozen = false;
   }
 
+  /**
+   * 商店 60s 未购买：笑长不耐烦，攻击轮每轮加速 10%（docs/20 L1-10），
+   * 下限 `shopImpatientMinPeriod`（2.4s）。由 app 在礼堂每帧按商店状态设置。
+   */
+  setImpatient(active: boolean): void {
+    if (!active) {
+      if (this.impatient) {
+        this.impatient = false;
+        this.haste = 1;
+      }
+      return;
+    }
+    if (this.impatient) return;
+    this.impatient = true;
+    // 当前轮不打断，从下一轮开始提速；第一轮先记一次 10%（见 startTelegraph）。
+  }
+
+  /** 基础攻击轮 ≈ idle + 预警 + 扫射 + 收束（docs/20：3.6~4.08s，取 balance 的 4.0s 基准）。 */
+  private maxHaste(): number {
+    const base =
+      BALANCE.level1.gazeIdleDuration +
+      BALANCE.level1.gazeTelegraphDuration +
+      BALANCE.level1.gazeSweepDuration +
+      BALANCE.level1.gazeRecoverDuration;
+    return Math.max(1, base / Math.max(0.1, BALANCE.level1.shopImpatientMinPeriod));
+  }
+
   update(dt: number, playerX: number): void {
     if (this.frozen) return;
-    this.blinkClock += dt;
+    const step = dt * this.haste;
+    this.blinkClock += step;
     if (this.blinkRemain > 0) {
-      this.blinkRemain = Math.max(0, this.blinkRemain - dt);
+      this.blinkRemain = Math.max(0, this.blinkRemain - step);
       if (this.blinkRemain === 0) this.active = this.wasActiveBeforeBlink;
       return;
     }
@@ -158,9 +193,9 @@ export class LaserBoss {
       return;
     }
 
-    this.modeTimer -= dt;
+    this.modeTimer -= step;
     if (this.modeTimer > 0) {
-      this.advanceBeams(dt, playerX);
+      this.advanceBeams(step, playerX);
       return;
     }
 
@@ -188,6 +223,9 @@ export class LaserBoss {
   }
 
   private startTelegraph(playerX: number): void {
+    if (this.impatient) {
+      this.haste = Math.min(this.maxHaste(), this.haste / (1 - BALANCE.level1.shopImpatientAccel));
+    }
     this.mode = "telegraph";
     this.modeTimer = BALANCE.level1.gazeTelegraphDuration;
     this.active = false;

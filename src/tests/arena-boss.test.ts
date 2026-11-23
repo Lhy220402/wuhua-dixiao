@@ -46,7 +46,21 @@ function advanceUntil(
 }
 
 describe("ArenaBoss 攻击判定修复", () => {
-  it("A2 粉笔雨按玩家过去 1.5s 的位置采样，5 个落点不再叠在一列", () => {
+  it("A1 追踪弹发数由 balance.count 驱动（难度调参后 4 发）", () => {
+    const boss = new ArenaBoss(BOSS2, DESKS);
+    advanceUntil(boss, () => boss.state.attackId === "a1" && boss.state.mode === "active", {
+      playerAt: () => 60,
+      maxSeconds: 20,
+    });
+    let maxHoming = 0;
+    for (let t = 0; t < 1.2; t += DT) {
+      boss.update(DT, { x: 60, y: 512 }, noop);
+      maxHoming = Math.max(maxHoming, boss.state.homing.length);
+    }
+    expect(maxHoming).toBe(BALANCE.attacks.a1.count);
+  });
+
+  it("A2 粉笔雨按玩家过去 1.5s 的位置采样，落点不再叠在一列", () => {
     const boss = new ArenaBoss(BOSS2, DESKS);
     // 玩家以 120px/s 横移，6s 后到达 A2；1.5s 窗口内应覆盖约 180px
     advanceUntil(

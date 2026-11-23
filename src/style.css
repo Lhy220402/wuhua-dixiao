@@ -81,6 +81,23 @@
 * {
   box-sizing: border-box;
   -webkit-tap-highlight-color: transparent;
+  /* 手机长按不弹系统菜单、不选中文本（游戏内没有可复制内容） */
+  -webkit-touch-callout: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+::selection {
+  background: transparent;
+  color: inherit;
+}
+
+canvas,
+img {
+  -webkit-user-drag: none;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
 }
 
 html,
@@ -1159,6 +1176,49 @@ body {
   }
 }
 
+/* 失败页死亡数字：超大等宽 + 放大回弹（docs/10 §2.3）；数字本身由 overlays 滚动 0→N */
+.death-big {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  margin: 0 0 6px;
+}
+
+.death-big-num {
+  font-family: var(--font-num);
+  font-size: clamp(56px, 13vh, 92px);
+  font-weight: 900;
+  line-height: 0.9;
+  color: var(--c-paper);
+  font-variant-numeric: tabular-nums;
+  text-shadow:
+    3px 3px 0 var(--c-ink-0),
+    0 0 18px rgba(229, 72, 77, 0.35);
+  animation: death-num-pop 620ms var(--ease-emph-decel) both;
+}
+
+.death-big-label {
+  color: var(--c-chalk-2);
+  font-size: var(--fs-12);
+  letter-spacing: 0.18em;
+}
+
+@keyframes death-num-pop {
+  0% {
+    opacity: 0;
+    transform: scale(2.3) rotate(-4deg);
+  }
+  55% {
+    opacity: 1;
+    transform: scale(0.92) rotate(1.5deg);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) rotate(0);
+  }
+}
+
 .modal-title {
   margin: 0 0 8px;
   font-size: var(--fs-28);
@@ -1859,6 +1919,16 @@ body.reduce-motion *::after {
   .modal-title {
     font-size: var(--fs-20);
     margin-bottom: 4px;
+  }
+  .death-big {
+    margin-bottom: 0;
+  }
+  .death-big-num {
+    font-size: clamp(40px, 11vh, 56px);
+    text-shadow: 2px 2px 0 var(--c-ink-0);
+  }
+  .death-big-label {
+    font-size: 10px;
   }
   .modal-sub {
     margin-bottom: 8px;

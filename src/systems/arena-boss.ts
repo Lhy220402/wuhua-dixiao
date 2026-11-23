@@ -355,7 +355,8 @@ export class ArenaBoss {
     if (this.currentAttack) this.callbacks?.onAttack(this.currentAttack.id);
     this.warningArr = [];
     if (this.currentAttack?.id === "a2") {
-      this.chalkTargets = this.sampleHistory(5);
+      const count = Number(this.currentAttack.params["count"] ?? 5);
+      this.chalkTargets = this.sampleHistory(count);
       this.warningArr = this.chalkTargets.map((x) => ({
         kind: "chalk",
         x,
@@ -393,9 +394,10 @@ export class ArenaBoss {
   }
 
   private requiredSpawns(): number {
-    const id = this.currentAttack?.id;
-    if (id === "a1") return 3;
-    if (id === "a2") return 5;
+    // 数量由 content/attacks 的 params.count 驱动（2026-11-23 难度调参：A1 4 发 / A2 6 根），
+    // 不在系统里写死，避免出现「balance 改了、实际发数没变」的隐性偏差。
+    const count = Number(this.currentAttack?.params["count"]);
+    if (Number.isFinite(count) && count > 0) return count;
     return 1;
   }
 
@@ -418,7 +420,7 @@ export class ArenaBoss {
       this.chalkTargets.forEach((x, i) => {
         this.chalkArr.push({ x, y: -30 - i * 70, vy: Number(p["fallSpeed"] ?? 700) });
       });
-      this.spawned = 5;
+      this.spawned = this.chalkTargets.length;
     } else if (attack.id === "a3") {
       this.shockArr.push({
         x: this.hurtbox.x - 10,
@@ -444,7 +446,7 @@ export class ArenaBoss {
   }
 
   private tickAttackSpawns(player: Vec): void {
-    if (this.currentAttack?.id !== "a1" || this.spawned >= 3) return;
+    if (this.currentAttack?.id !== "a1" || this.spawned >= this.requiredSpawns()) return;
     if (this.spawnTimer <= 0) {
       this.spawnHoming(player);
       this.spawned++;

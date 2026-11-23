@@ -21,8 +21,8 @@
 |---|---|
 | 代码实现 | **已完成**，两关可玩，`src/` 约 40 个 TS/文件 |
 | 依赖 | 仅 `kaplay`（运行时）+ `vite` / `typescript` / `vitest`（开发） |
-| 测试 | `pnpm test` → **12 个文件 / 81 条全绿**（含扇形视线、Boss 战、夺枪过场、继续游戏软锁回归） |
-| 构建 | `pnpm build` 通过；gzip 约 114KB JS + 6KB CSS |
+| 测试 | `pnpm test` → **12 个文件 / 83 条全绿**（含扇形视线、Boss 战、夺枪过场、继续游戏软锁、商店不耐烦加速回归） |
+| 构建 | `pnpm build` 通过；gzip 约 117.6KB JS + 6.3KB CSS |
 | 上线 | **2026-11-23 晚已发布第二轮**：`idealismo10/WUHUADIxiaozhuan`，Pages 源 `gh-pages`（`b531213`），线上 JS `index-CdlTiSjT.js` 与本地 `dist` 逐字节一致；线上标题/开始/第一关 HUD/多指触控/暂停恢复已验证 |
 | 手机真机 | 横屏渲染、触控移动/跳跃、暂停、全屏按钮已验证；完整两关建议人工复跑 |
 | 失败音效 | 用户提供的 mp3 已降噪/转码为 `fail.ogg` + mp3 + m4a；`sfx.fail` 已实际加载 |
@@ -59,7 +59,7 @@
 cd /root/workspace/wuhua-dixiao
 pnpm install        # 已装过可跳过；pnpm 12，已配置 esbuild 构建白名单
 pnpm dev            # http://localhost:5173/ ，手机同局域网用 http://<IP>:5173/
-pnpm test           # Vitest 纯逻辑单测（81 条）
+pnpm test           # Vitest 纯逻辑单测（83 条）
 pnpm typecheck      # tsc --noEmit
 pnpm build          # dist/，base: "./"，可子路径托管
 pnpm preview        # 预览生产构建
@@ -108,7 +108,7 @@ src/
     items.ts / shops.ts / buffs.ts / memes.ts / cutscenes.ts / audio-manifest.ts
   art/                      # 代码生成扁平矢量：玩家/笑长/Boss2/NPC/瓦片/物品/FX
   ui/                       # HUD / 对话 / 商店 / 过场跳过 / 标题/暂停/失败/结算/TBC / 触控
-  tests/                    # 12 个 vitest 文件，81 条
+  tests/                    # 12 个 vitest 文件，83 条
 docs/                       # v0.1 设计文档（冻结）
 screenshots/                # 手机实机、音频处理前后频谱
 ```
@@ -132,12 +132,12 @@ screenshots/                # 手机实机、音频处理前后频谱
 - 触控控件用 `@media (any-pointer: coarse)` 显示；HUD 有全屏按钮（触控设备）。
 
 ### 6.4 第一关视线（2026-11-23 改为扇形“目光”）
-- `LaserBoss` 状态机：idle 0.4 → telegraph 0.8 → sweep（P1≈1.882s / P2 1.8s / P3 4.0s）→ recover 1.0；4 轮循环 P1/P1/P2/P3。
+- `LaserBoss` 状态机：idle 0.4 → telegraph 0.8 → sweep（P1≈1.882s / P2 1.8s / P3 4.5s）→ recover 1.0；4 轮循环 P1/P1/P2/P3。
 - **每只出束眼从瞳孔射出一个扇形**（半角 8°，`BALANCE.level1.gazeFanHalfAngle`）：玩家身体 3×3 采样点任一点落在扇形内、且到瞳孔连线未被挂牌挡住 → 暴露。挂牌后是斜向阴影。
 - 扇形中心射向地面瞄点：P1 右眼 160→800、P2 左右眼反向对扫、P3 预警期追踪玩家 x 后锁死。
-- 眨眼每 4s 闭眼 1.2s；眨眼期间扇形/判定同时消失，睁眼后若原本在扫射会恢复。
+- 眨眼每 4s 闭眼 1.0s（2026-11-23 难度调参 1.2→1.0）；眨眼期间扇形/判定同时消失，睁眼后若原本在扫射会恢复。
 - 暴露读条 +1/s、离开 3× 回落、2.5s 失败；老吴 buff ×0.6 / 25s / CD 60s。
-- **P3 锁定 4.0s**（原文档 1.2s）：锁定后停在锁定点不再追人；站着不动 2.5s 读条打满，开火瞬间横移可躲。
+- **P3 锁定 4.5s**（原文档 1.2s；2026-11-23 难度调参 4.0→4.5）：锁定后停在锁定点不再追人；站着不动 2.5s 读条打满，开火瞬间横移可躲。
 - 第一关 R2/R3 加了 64px 坑以满足「掉坑失败」；R1 地面完整教学。
 
 ### 6.5 第一关商店/过场
@@ -150,6 +150,7 @@ screenshots/                # 手机实机、音频处理前后频谱
 
 ### 6.6 第二关
 - `ArenaBoss` A1 三连追踪 / A2 粉笔雨 / A3 地面冲击波 / A4 香蕉皮 / A5 巨型冲击波 / A6 巨足踩踏。
+- **2026-11-23 难度调参**：`attackGap` 1.6→1.2s、A1 追踪弹 3→4 发、A2 粉笔雨 5→6 根；A1/A2 发数改为由 `params.count` 驱动（旧系统写死 3/5，改了 balance 不生效）。
 - 受击 `resolveDamage`：−1 HP、−5000 金币，1.2s 无敌；香蕉是滑倒不是伤害。
 - 每 3 次有效命中掉 2500；场上最多 5 枚、8s 消失、磁吸。
 - Boss HP≤40 触发 3s 转阶段过场；巨型期间子弹刮痧（−0 / 刮痧 toast），不掉币。
@@ -202,13 +203,22 @@ screenshots/                # 手机实机、音频处理前后频谱
 - **移动端**：指针捕获失败时 `pointerleave` 释放、按钮 `pointerIds` 计数、暂停/失活 `releaseHeld()` 防粘键、iPhone Safari 隐藏全屏按钮、≤720px BOSS 血条 34vw。详见 §8.16。
 - **发布**：代码 master `2416500`、gh-pages `b531213`，线上 JS `index-CdlTiSjT.js` SHA256 `de3bac…fa1c97`；Gitee 镜像已推送。详见 §7 / §10。
 
+### 6.13 2026-11-23 晚第三轮（图标 / 防误触 / 难度 / 打磨）
+
+- **网站图标（物化帝）**：`public/icons/icon.svg` 为唯一矢量源（冕冠/圆框眼镜/龙袍/红色凝视射线），生成 `favicon.ico`、`icon-192/512.png`、`apple-touch-icon-180.png`；新增 `public/site.webmanifest`。`index.html` 用相对路径 `./icons/...`，`base: "./"` 子路径不 404。生成命令见 `public/icons/README.md`。
+- **禁用复制/长按误触**：`main.ts` 在启动早期拦截 `copy/cut/contextmenu/selectstart/dragstart`、Ctrl/Cmd+C/X 与 iOS `gesturestart`；`style.css` 全局 `user-select:none`、`-webkit-touch-callout:none`、透明 `::selection`。
+- **提高 Boss 难度**（用户选「两关都加、中等偏上」）：第一关 `blinkWindow` 1.2→1.0s、`p3LockHold` 4.0→4.5s；第二关 `attackGap` 1.6→1.2s、`a1.count` 3→4、`a2.count` 5→6。全部在 `balance.ts`，docs/02/20/21 已同步；`src/tests/laser-boss.test.ts` +2 条、`arena-boss.test.ts` +1 条。
+- **失败页死亡数字大动画**：`Overlays.showFail` 接收 `deaths`，卡片顶部渲染 `.death-big-num`（0→N 滚动 480ms + CSS 620ms 放大回弹）+ 「死亡次数」；`prefers-reduced-motion` / `body.reduce-motion` 时直出终值；`hideFail` 取消 rAF。
+- **商店 60s 后激光加速**：`LaserBoss.setImpatient()` 在礼堂商店生成且 60s 未购买后，每轮攻击开始时 `haste /= 0.9`，封顶 `4.0/2.4≈1.667`；状态机 dt 按 haste 缩放（预警/扫射/眨眼同步加快）。`app.isShopImpatient()` 每帧驱动；买枪/过场 `reset()` 清空。
+- 验证：`pnpm typecheck` 通过；`pnpm test` 83/83；Playwright 全流程（L1→夺枪过场→L2→碰鞋→未完待续）0 pageerror；失败页 1280×720 / 844×390 截图正常；手机实机横屏标题/开场/触控/失败/重试已验证。
+
 ## 7. 验收记录（已跑）
 
 | 项 | 结果 |
 |---|---|
 | `pnpm typecheck` | 通过 |
-| `pnpm test` | 81/81 通过（12 文件，约 2s） |
-| `pnpm build` | 通过，dist gzip ≈ 114KB JS + 6KB CSS |
+| `pnpm test` | 83/83 通过（12 文件，约 2s） |
+| `pnpm build` | 通过，dist gzip ≈ 117.6KB JS + 6.3KB CSS |
 | PC 全流程 | 标题→第一关→商店→买枪→过场跳过→结算→第二关→巨大化→碰鞋→TBC，全通 |
 | 失败 | 尖刺/掉坑、视线满、HP≤0、金币≤0；失败页与 `sfx.fail` 正常 |
 | CP2 | 失败重试后 HP≥3、金币≥15000、Boss40、giant=true、鞋 1s 后激活 |
@@ -217,6 +227,10 @@ screenshots/                # 手机实机、音频处理前后频谱
 | 手机真机 | 横屏渲染/触控移动跳跃/暂停/全屏已截图；线上 GitHub Pages 可开局 |
 | 生产子路径 | `dist/` 放在 `/WUHUADIxiaozhuan/` 下静态服务可跑，无 404（除故意缺失的音频） |
 | 笑长激光判定 | 单测 + 无头运行时：P1 预警线即落点、P2 真交叉、P3 锁定冻结；锁定站着不动 2.5s 失败、横移不失败 |
+| 第三轮难度调参 | 单测：A1 发数=4、A2 落点=6、LaserBoss 每轮提速 10% 且 2.4s 封顶、取消后恢复常速；`pnpm test` 83/83 |
+| 失败页死亡数字 | 无头运行时：`.death-big-num` 从 0 滚到 1、620ms 动画、减少动效可直出；844×390 卡片不溢出 |
+| 商店激光加速 | 无头运行时：`shopTimer=61` 进入 R4 后 `laser.debug.haste=1.111`、`impatient=true` |
+| 网站图标 / 防误触 | 图标 6 个资源 200、manifest 解析正确；`copy/cut/contextmenu/selectstart/dragstart/Ctrl+C` 全部 defaultPrevented、选中文本为空 |
 | 线上发布（第一轮，改名后） | 2026-11-23：master `9dd18ee`、gh-pages `f8c50af`；线上 JS SHA256 与本地 `dist` 逐字节一致；点击「开始」进入第一关 HUD；除故意缺失的音频外无 404 |
 | 线上发布（第二轮，WIP 收尾） | 2026-11-23：master `2416500`、gh-pages `b531213`；Pages build `built`；线上 JS `index-CdlTiSjT.js` SHA256 `de3bac…` 与本地 `dist` 逐字节一致；Playwright 线上：标题「物化帝笑传」/「开始」→第一关 HUD、右+跳多指、按住键时暂停再恢复不粘键全部通过；0 pageerror、0 非音频 404（9 个音频 404 为故意缺失：bgm.level1 / sfx.land / sfx.jump） |
 | 扇形视线 | 单测 + 无头运行时：从瞳孔发出 19 条采样、半角 8°、挂牌斜向遮挡；锁定站桩 2.5s → `Fail/gaze`，锁定后横移暴露 0 |
@@ -231,9 +245,9 @@ screenshots/                # 手机实机、音频处理前后频谱
 
 1. 第二关 Boss 正式名未定 → `content/bosses/boss2.ts` 的 `name`、UI 的「BOSS」。
 2. 其余 17 个音频 ID 未提供；`public/audio/` 放同名文件即可。
-3. P3 锁定 4.0s（文档 1.2s）——为可玩性调参，已在 README 记录。
-4. 死亡数字大动画（10 §2.3）未单独实现；失败页直接显示死亡计数。
-5. 商店不买 60s 的激光加速未实现，只出「你搁这陪我唠嗑呢？」嘲讽。
+3. P3 锁定 4.5s（文档 1.2s）、眨眼窗 1.0s（文档 1.2s）——2026-11-23 用户要求「两关都加、中等偏上」的难度调参，已同步 docs/02/20 与 README。
+4. 死亡数字大动画已做在失败页内（超大 N + 「死亡次数」+ 0→N 滚动/放大回弹，减少动效直出）；10 §2.3 的独立全屏死亡演出仍与「失败页 + 手动重试」流程合并，未拆开。
+5. 商店不买 60s 的激光加速已实现（2026-11-23）：每轮提速 10%，下限 2.4s；嘲讽气泡保留。
 6. R2/R3 坑为满足掉坑新增，与 20 的满地面网格图略有出入。
 7. 金币不加千分位（02/10 明文，覆盖 40 的 `15,000`）。
 8. iOS Safari 全屏/方向锁定能力有限，已静默降级；真机体验可能不如 Android。
@@ -246,13 +260,16 @@ screenshots/                # 手机实机、音频处理前后频谱
 15. **A6 踩踏**：docs/21 原文“落点=玩家当前 x”与“预警期离开阴影”矛盾；实现改为预警时锁定落点（否则移动无法躲）。已同步文档措辞。
 16. **移动端**：小屏横屏（≤720px）BOSS 血条缩到 34vw 避免和金币重叠；减少动效设置现在同时关闭 canvas 震屏（此前只关 CSS 动效）；移动端子代理补齐触控防粘键/滑出释放/全屏按钮隐藏等。
 17. **继续游戏软锁（已修）**：买枪过场中刷新曾是死档；现在按 `planResume` 补播过场或直进第二关。建议真机回归：购买后立刻刷新、过场结束前刷新各一次。
+18. **2026-11-23 难度调参**：第一关眨眼/锁定、第二关硬直/发数均按用户「中等偏上」调整；若真机回归觉得过难/过易，只改 `balance.ts` 的 5 个值即可，不要改系统。
+19. **商店 60s 加速实现**：`shopImpatientAccel=0.1` 按「每轮 −10%」解释（docs/20 L1-10），下限 2.4s；速度通过 `dt*haste` 作用于整个 LaserBoss 状态机，因此预警/扫射也会变快（刻意惩罚）。
+20. **网站图标/防误触**：图标为手写 SVG + rsvg-convert 生成 PNG/ICO，无新增运行时依赖；复制拦截在 `document` capture 阶段，不依赖 canvas/kaplay。
 
 ## 9. 待用户提供
 
 1. **第二关 Boss 名字**（外形已按“学生”实现）。
 2. 其余音效/BGM（可选；缺失静默，不阻塞）。
 3. Gitee Pages 镜像：仓库已建好并推送（`master` 源码 + `gh-pages` 构建产物，公开仓库），但 Gitee Pages 需账号**实名认证** + 在仓库「服务 → Gitee Pages」网页手动开启；免费版每次推送后需点「更新」。OpenAPI 无 Pages 端点，不能脚本开启。
-4. 是否补「梗图鉴」入口 / 死亡数字大动画 / 更硬核难度。
+4. 是否补「梗图鉴」入口 / 独立全屏死亡演出 / 更高难度档位。
 
 ## 10. 发布与凭据
 
@@ -297,6 +314,8 @@ screenshots/                # 手机实机、音频处理前后频谱
 - [ ] 第一关 R2/R3/R4：扇形从眼睛发出、P1 扫满 800、P2 两束交叉、P3 锁定后不追人；眨眼/挂牌斜向阴影安全
 - [ ] 夺枪过场：潮冲向玩家、枪响曳光、笑长连椅倒地、枪抛回手里；触屏可跳过
 - [ ] 手机横屏：BOSS 血条不压金币、射击/跳跃/移动多指同时按、减少动效关震屏
+- [ ] 网站图标：浏览器标签/主屏图标为物化帝，manifest 200；长按 HUD/标题不弹系统菜单、Ctrl+C 无选中
+- [ ] 失败页死亡数字滚动/回弹正常；商店 60s 不买后激光明显加速、买枪后恢复正常
 - [ ] 固定文案逐字未改；小明无台词
 - [ ] 线上 URL 可开局、资源无 404（音频除外）
 
