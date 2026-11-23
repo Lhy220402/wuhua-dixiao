@@ -2118,7 +2118,7 @@ body.reduce-motion *::after {
   }
 }
 /* 关于弹层在手机横屏/窗口高度较小时也压缩为一屏（部分 WebView 的 CSS 高度能到 585） */
-@media (max-height: 620px) {
+@media (max-height: 620px), (any-pointer: coarse) {
   .about-card {
     max-height: calc(100dvh - 16px);
     padding: 8px 12px;
