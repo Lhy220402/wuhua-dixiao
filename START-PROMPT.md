@@ -29,11 +29,11 @@
 - 手机横屏触控 + PC 键鼠；DOM 覆盖层 UI；canvas 只画世界；存档 localStorage key `cmi.save.v1`。
 - `pnpm typecheck` 通过；`pnpm test` **13 文件 / 86 条全绿**；`pnpm build` 通过。
 - **线上（GitHub Pages）**：https://idealismo10.github.io/WUHUADIxiaozhuan/
-  代码发布提交 `73ce634`（此后仅文档更新）→ gh-pages `4aacb86`，Pages build `built`；
-  线上 JS `assets/index-CPABeHCx.js` SHA256 `4784f388…6688d`、CSS `assets/index-D4-97FbF.css` SHA256 `eafa4419…a0cd2`，与本地 dist 逐字节一致。
+  代码发布提交 `f0db370`（此后仅文档更新）→ gh-pages `e5727dd`，Pages build `built`；
+  线上 JS `assets/index-DX2eVvuX.js` SHA256 `5421955f…5570d`、CSS `assets/index-D4-97FbF.css` SHA256 `eafa4419…a0cd2`，与本地 dist 逐字节一致。
   仓库：https://github.com/idealismo10/WUHUADIxiaozhuan
 - **Gitee 镜像**：https://gitee.com/idealismo10/WUHUADIxiaozhuan
-  第三轮已推送 master + gh-pages `ad5a3fc`；Gitee 上 JS/CSS SHA256 与本地 dist 一致。
+  第三轮/盲区修复已推送 master + gh-pages `53bca87`；Gitee 上 JS/CSS SHA256 与本地 dist 一致。
   Gitee Pages **仍未开启**：需账号实名认证后，在仓库「服务 → Gitee Pages」选 `gh-pages` / `/` 手动启动；免费版每次推送后要点「更新」。预期地址 https://idealismo10.gitee.io/WUHUADIxiaozhuan/
 - 2026-11-24 修盲区：礼堂挂牌改 48px 窄牌、P1/P2 扩到 0→960，整轮无永久盲区（新增回归测试）。
 - 第三轮已做：物化帝网站图标（svg/ico/png/manifest）；禁用复制/长按误触；两关 Boss 难度调参；失败页死亡数字大动画；商店 60s 后激光加速；标题页「关于」菜单（玩法简介 + GitHub/Gitee 链接）。
@@ -100,9 +100,9 @@ F. 发布：`pnpm typecheck && pnpm test && pnpm build`；保持 `base: "./"`；
 项目：/root/workspace/wuhua-dixiao，已实现并构建。只做 GitHub Pages / Gitee 镜像发布与线上验证，不改玩法。
 - 先读 HANDOFF.md §10（发布与凭据）、HANDOFF-SUMMARY.md 与 README.md「GitHub Pages 发布 / Gitee 镜像」。
 - `pnpm typecheck && pnpm test && pnpm build`；检查 dist/index.html 使用相对路径（base "./"）。
-- 当前基线：代码发布提交 `73ce634`（master 后续仅文档更新）；gh-pages `4aacb86`；线上 JS `assets/index-CPABeHCx.js` SHA256 `4784f388…`、CSS `index-D4-97FbF.css` SHA256 `eafa4419…`。
+- 当前基线：代码发布提交 `f0db370`（master 后续仅文档更新）；gh-pages `e5727dd`；线上 JS `assets/index-DX2eVvuX.js` SHA256 `5421955f…`、CSS `index-D4-97FbF.css` SHA256 `eafa4419…`。
 - GitHub：更新 gh-pages 分支；线上 URL https://idealismo10.github.io/WUHUADIxiaozhuan/ 。git push 超时可用 Git Data API（blobs/trees/commits/PATCH ref）。
-- Gitee：仓库 https://gitee.com/idealismo10/WUHUADIxiaozhuan（master + gh-pages `ad5a3fc` 已是第三轮）。Gitee Pages 未开启（需实名认证 + 网页手动启动）；开启后每次推送需在 Pages 设置页点「更新」。推送用一次性 token，用户名 `idealismo10`，走 `https://oauth2:<token>@gitee.com/...`，不写盘。
+- Gitee：仓库 https://gitee.com/idealismo10/WUHUADIxiaozhuan（master + gh-pages `53bca87` 已是第三轮）。Gitee Pages 未开启（需实名认证 + 网页手动启动）；开启后每次推送需在 Pages 设置页点「更新」。推送用一次性 token，用户名 `idealismo10`，走 `https://oauth2:<token>@gitee.com/...`，不写盘。
 - 用无头浏览器验证标题、关于、开始、第一关 HUD、资源无 404（缺失音频除外），并核对线上 JS/CSS 与本地 dist 的 SHA256。
 - 不要把 token 写进文件/提交/文档；不要 force 覆盖错误内容。
 - 完成后给我线上 URL + 发布 commit + 验证结果。

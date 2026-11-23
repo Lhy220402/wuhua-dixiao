@@ -17,9 +17,9 @@ iwanna 式校园梗网页小游戏：精准平台跳跃 + 演出 + 两关 Boss +
 |---|---|
 | 测试 | `pnpm test`：13 文件 / 86 条全绿 |
 | 构建 | `pnpm build` 通过；dist gzip ≈ 119KB JS + 6.8KB CSS |
-| GitHub 线上 | 代码提交 `73ce634`（此后仅文档）→ gh-pages `4aacb86`，Pages build `built` |
-| 线上产物 | `index-CPABeHCx.js` SHA256 `4784f388…6688d`；`index-D4-97FbF.css` SHA256 `eafa4419…a0cd2`；与本地 dist 逐字节一致 |
-| Gitee 镜像 | 第三轮已推 master + gh-pages `ad5a3fc`；产物 SHA256 已核对；Gitee Pages 未开启（需实名+网页手动启动） |
+| GitHub 线上 | 代码提交 `f0db370`（此后仅文档）→ gh-pages `e5727dd`，Pages build `built` |
+| 线上产物 | `index-DX2eVvuX.js` SHA256 `5421955f…5570d`；`index-D4-97FbF.css` SHA256 `eafa4419…a0cd2`；与本地 dist 逐字节一致 |
+| Gitee 镜像 | 第三轮已推 master + gh-pages `53bca87`；产物 SHA256 已核对；Gitee Pages 未开启（需实名+网页手动启动） |
 | 运行时依赖 | 仅 `kaplay`；开发依赖 vite/typescript/vitest |
 | 存档 | `localStorage` key `cmi.save.v1`（`.bak` 轮换、损坏 `.bad`、隐私模式内存降级） |
 

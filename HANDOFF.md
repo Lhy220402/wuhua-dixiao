@@ -1,6 +1,6 @@
 # 《物化帝笑传》交接文档（v1.0 · 2026-11-23）
 
-> ✅ 2026-11-23 晚第三轮已发布（图标/防误触/难度/死亡数字/商店激光加速/关于）：master 代码提交 `73ce634` → gh-pages `4aacb86`，线上 JS `index-CPABeHCx.js`。此前第二轮快照见 `HANDOFF-WIP.md`（历史归档，仅作参考）。
+> ✅ 2026-11-23 晚第三轮已发布（图标/防误触/难度/死亡数字/商店激光加速/关于/盲区修复）：master 代码提交 `f0db370` → gh-pages `e5727dd`，线上 JS `index-DX2eVvuX.js`。此前第二轮快照见 `HANDOFF-WIP.md`（历史归档，仅作参考）。
 
 > 用途：把当前**已实现、已上线**的项目完整交给下一个对话 / 新 AI。
 > 先读本文件，再按「第 3 节」读代码；设计文档在 `docs/`，`docs/02-data-contracts.md` 是唯一事实来源。
@@ -12,7 +12,7 @@
 
 - **在线试玩**：https://idealismo10.github.io/WUHUADIxiaozhuan/
 - **源码仓库**：https://github.com/idealismo10/WUHUADIxiaozhuan
-- **Gitee 镜像**：https://gitee.com/idealismo10/WUHUADIxiaozhuan （公开；2026-11-23 晚第三轮已推送 `master` 与 `gh-pages ad5a3fc`，产物 SHA256 已与本地核对；Pages 仍未开启，需实名认证后网页手动启动）
+- **Gitee 镜像**：https://gitee.com/idealismo10/WUHUADIxiaozhuan （公开；2026-11-23 晚第三轮已推送 `master` 与 `gh-pages 53bca87`，产物 SHA256 已与本地核对；Pages 仍未开启，需实名认证后网页手动启动）
 - **本地产物**：`dist/`（静态托管）、`/sdcard/Download/DSH-Go/物化帝笑传-web.zip`
 
 ## 1. 当前状态（2026-11-23）
@@ -23,7 +23,7 @@
 | 依赖 | 仅 `kaplay`（运行时）+ `vite` / `typescript` / `vitest`（开发） |
 | 测试 | `pnpm test` → **13 个文件 / 86 条全绿**（含扇形视线、Boss 战、夺枪过场、继续游戏软锁、商店不耐烦加速、关于内容、整轮无盲区回归） |
 | 构建 | `pnpm build` 通过；gzip 约 117.6KB JS + 6.3KB CSS |
-| 上线 | **2026-11-23 晚第三轮已发布**：`idealismo10/WUHUADIxiaozhuan`，Pages 源 `gh-pages`（`4aacb86`，build `built`），线上 JS `index-CPABeHCx.js` / CSS `index-D4-97FbF.css` 与本地 `dist` 逐字节一致；线上标题/关于/开始/第一关 HUD/暂停已验证；Gitee 第三轮 `master` + `gh-pages ad5a3fc` 已推送 |
+| 上线 | **2026-11-23 晚第三轮已发布**：`idealismo10/WUHUADIxiaozhuan`，Pages 源 `gh-pages`（`e5727dd`，build `built`），线上 JS `index-DX2eVvuX.js` / CSS `index-D4-97FbF.css` 与本地 `dist` 逐字节一致；线上标题/关于/开始/第一关 HUD/暂停已验证；Gitee 第三轮 `master` + `gh-pages 53bca87` 已推送 |
 | 手机真机 | 横屏渲染、触控移动/跳跃、暂停、全屏按钮已验证；完整两关建议人工复跑 |
 | 失败音效 | 用户提供的 mp3 已降噪/转码为 `fail.ogg` + mp3 + m4a；`sfx.fail` 已实际加载 |
 | 待补 | 第二关 Boss 正式名；其余 17 个音效/BGM；Gitee Pages（需实名认证后网页手动开启）；完整两关真机人工回归 |
@@ -203,7 +203,7 @@ screenshots/                # 手机实机、音频处理前后频谱
 - **第二关审计 9 条**：A5/A6 独立计时并保留帧超期量（≈2s/≈3s，同帧双到时 A6 顺延 `giantStagger=0.35s`）；A5 补预警音；转阶段那一发不掉币；`run.giant` 延后到巨大化 1.2s；香蕉皮底层 0.3s 去抖；CP2 重试不再重复鞋气泡；`game:retry` 按 bossPhase 推导 cp1/cp2；A2 站桩落点铺开。详见 §8 与 docs/21。
 - **买枪后刷新软锁修复**：`planResume()` + `npcFlags.l1_cleared`；枪未入包 → 回 R4 补播过场，已结算 → 直进第二关并补 15000；`src/tests/resume.test.ts` 7 条覆盖。详见 §8.17。
 - **移动端**：指针捕获失败时 `pointerleave` 释放、按钮 `pointerIds` 计数、暂停/失活 `releaseHeld()` 防粘键、iPhone Safari 隐藏全屏按钮、≤720px BOSS 血条 34vw。详见 §8.16。
-- **发布**：代码 master `73ce634`、gh-pages `4aacb86`，线上 JS `index-CPABeHCx.js` SHA256 `4784f388…6688d`、CSS `index-D4-97FbF.css` SHA256 `eafa4419…a0cd2`；Gitee 第三轮 `master` + `gh-pages ad5a3fc` 已推送（产物 SHA256 已核对）；Gitee Pages 未开启。详见 §7 / §10。
+- **发布**：代码 master `f0db370`、gh-pages `e5727dd`，线上 JS `index-DX2eVvuX.js` SHA256 `5421955f…5570d`、CSS `index-D4-97FbF.css` SHA256 `eafa4419…a0cd2`；Gitee 第三轮 `master` + `gh-pages 53bca87` 已推送（产物 SHA256 已核对）；Gitee Pages 未开启。详见 §7 / §10。
 
 ### 6.13 2026-11-23 晚第三轮（图标 / 防误触 / 难度 / 打磨）
 
@@ -250,7 +250,7 @@ screenshots/                # 手机实机、音频处理前后频谱
 | 夺枪过场 | 无头运行时：锚点 864、潮冲到 906、枪响 2.6s、倒地 3.0s、抛枪 502→864、5.3s 入包、6.0s LevelClear |
 | 第二关 Boss | 单测：A2 落点跨度 >100px（站桩也铺开）、A3 预警在 Boss 脚下、A6 落点=预警位置、A5/A6 间隔 2s/3s、转阶段不掉币、CP2 不重复气泡；运行时碰鞋优先于同帧伤害 |
 | 继续游戏软锁 | `planResume` 单测 7 条：普通恢复 / R4 未拿枪补播过场 / 0.7s 结算窗口补播 / 旧档无标记推断 / 已结算直进第二关 / 矛盾档仍补播 / 第二关恢复 |
-| 线上发布（第三轮） | 2026-11-23：master 代码 `73ce634` → gh-pages `4aacb86`；Pages build `built`；线上 `index-CPABeHCx.js` / `index-D4-97FbF.css` SHA256 与本地 `dist` 逐字节一致；无头线上：标题/关于/GitHub+Gitee 外链/开始→第一关 HUD/暂停通过；0 pageerror、0 非音频 404（4 个音频 404 故意缺失） |
+| 线上发布（第三轮） | 2026-11-23：master 代码 `f0db370` → gh-pages `e5727dd`；Pages build `built`；线上 `index-DX2eVvuX.js` / `index-D4-97FbF.css` SHA256 与本地 `dist` 逐字节一致；无头线上：标题/关于/GitHub+Gitee 外链/开始→第一关 HUD/暂停通过；0 pageerror、0 非音频 404（4 个音频 404 故意缺失） |
 
 > 注意：本机 Playwright/无头 Chromium 默认 SwiftShader 参数下 Kaplay 的 WebGL2 会 context lost，无头截图里 canvas 是空的；这是测试环境限制，**真机手机/正常浏览器渲染正常**。不要据此误判游戏坏掉。
 > 纯逻辑/运行时验证可用 `--use-gl=angle --use-angle=swiftshader-webgl --enable-unsafe-swiftshader --ignore-gpu-blocklist` 启动 Chromium：WebGL2 可用、游戏循环可跑、`window.__CMI__.debugState()` 可取状态；截图仍可能是空白 canvas（context lost），不要以截图为唯一证据。
@@ -282,17 +282,17 @@ screenshots/                # 手机实机、音频处理前后频谱
 
 1. **第二关 Boss 名字**（外形已按“学生”实现）。
 2. 其余音效/BGM（可选；缺失静默，不阻塞）。
-3. Gitee Pages 镜像：仓库已建好并推送第三轮（`master` 源码 + `gh-pages ad5a3fc` 构建产物，公开仓库），但 Gitee Pages 需账号**实名认证** + 在仓库「服务 → Gitee Pages」网页手动开启；免费版每次推送后需点「更新」。Gitee OpenAPI 无 Pages 端点，不能脚本开启。
+3. Gitee Pages 镜像：仓库已建好并推送第三轮（`master` 源码 + `gh-pages 53bca87` 构建产物，公开仓库），但 Gitee Pages 需账号**实名认证** + 在仓库「服务 → Gitee Pages」网页手动开启；免费版每次推送后需点「更新」。Gitee OpenAPI 无 Pages 端点，不能脚本开启。
 4. 是否补「梗图鉴」入口 / 独立全屏死亡演出 / 更高难度档位。
 
 ## 10. 发布与凭据
 
 - GitHub：`idealismo10/WUHUADIxiaozhuan`；Pages 源为 `gh-pages` 分支，URL `https://idealismo10.github.io/WUHUADIxiaozhuan/`。
 - **2026-11-23 账号/仓库改名**：GitHub 用户名 `Lhy220402` → `idealismo10`，仓库 `wuhua-dixiao` → `WUHUADIxiaozhuan`；旧地址由 GitHub 重定向。Gitee 用户名也为 `idealismo10`；2026-11-23 晚已在 Gitee 建公开仓库 `idealismo10/WUHUADIxiaozhuan` 并推送 `master`（源码）/ `gh-pages`（构建产物），Pages 服务未开启（需实名认证 + 网页手动启动）。
-- **发布记录（2026-11-23 晚，第三轮）**：代码发布提交 master `73ce634`（之后仅文档更新）；`gh-pages` 覆盖为 `4aacb86`（Pages build `built`，2026-11-23T15:52Z）；线上 `assets/index-CPABeHCx.js` SHA256 `4784f388…6688d`、`assets/index-D4-97FbF.css` SHA256 `eafa4419…a0cd2`，与本地 `dist` 逐字节一致；Playwright 线上验证标题/关于/外链/开始/暂停通过，0 pageerror、0 非音频 404。`base: "./"` 未改。第二轮记录：master `2416500` / gh-pages `b531213`（`index-CdlTiSjT.js`）；第一轮：master `9dd18ee` / gh-pages `f8c50af`（`index-glJx25Xp.js`）。
+- **发布记录（2026-11-23 晚，第三轮）**：代码发布提交 master `f0db370`（之后仅文档更新）；`gh-pages` 覆盖为 `e5727dd`（Pages build `built`，2026-11-23T16:14Z）；线上 `assets/index-DX2eVvuX.js` SHA256 `5421955f…5570d`、`assets/index-D4-97FbF.css` SHA256 `eafa4419…a0cd2`，与本地 `dist` 逐字节一致；Playwright 线上验证标题/关于/外链/开始/暂停通过，0 pageerror、0 非音频 404。`base: "./"` 未改。第二轮记录：master `2416500` / gh-pages `b531213`（`index-CdlTiSjT.js`）；第一轮：master `9dd18ee` / gh-pages `f8c50af`（`index-glJx25Xp.js`）。
 - 本机 `gh` 已登录该账号；**不要把 token 写进任何文件/提交/README**。
 - 用户曾在聊天中贴过 GitHub PAT / Gitee token，建议用完立即轮换/撤销（本次 Gitee token 同样建议轮换）。
-- Gitee 镜像：`https://gitee.com/idealismo10/WUHUADIxiaozhuan`，2026-11-23 晚第三轮已推送：`master`（源码/文档）与 `gh-pages`（`ad5a3fc`）；Gitee 上 `index-CPABeHCx.js` / `index-D4-97FbF.css` 与本地 `dist` SHA256 一致。本机未配置持久凭据，推送用临时 HTTPS token（不落盘；本轮 token 建议轮换）。
+- Gitee 镜像：`https://gitee.com/idealismo10/WUHUADIxiaozhuan`，2026-11-23 晚第三轮已推送：`master`（源码/文档）与 `gh-pages`（`53bca87`）；Gitee 上 `index-DX2eVvuX.js` / `index-D4-97FbF.css` 与本地 `dist` SHA256 一致。本机未配置持久凭据，推送用临时 HTTPS token（不落盘；本轮 token 建议轮换）。
 - Gitee Pages 开启（需账号实名认证）：仓库 → 服务 → Gitee Pages → 分支 `gh-pages`、目录 `/` → 启动；免费版每次推送后需在设置页点「更新」，地址预期 `https://idealismo10.gitee.io/WUHUADIxiaozhuan/`。Gitee OpenAPI 无 Pages 端点（`/pages` 405、`/pages/builds` 404），不能脚本开启。
 - 更新线上：
   ```bash
