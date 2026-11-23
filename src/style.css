@@ -1611,6 +1611,23 @@ body {
   }
 }
 
+
+/* 小屏横屏（iPhone SE 等 568–667 宽）：BOSS 血条与右侧金币不能重叠 */
+@media (max-width: 720px) {
+  .boss-bar {
+    width: min(210px, 34vw);
+  }
+  .hud-coins {
+    gap: 4px;
+  }
+  .exposure {
+    width: 140px;
+  }
+  .hud-top {
+    gap: 8px;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

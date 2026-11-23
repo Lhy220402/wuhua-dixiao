@@ -14,6 +14,7 @@ export function drawBoss1(
   eyes: Vec[],
   eye: EyeState,
   animTime: number,
+  firingEyes?: readonly number[],
 ): void {
   const pal = getPalette(k);
   const cx = 480;
@@ -105,21 +106,25 @@ export function drawBoss1(
   });
   line(k, cx - 12, headY + 24, cx + 12, headY + 24, pal.ink, 3);
 
-  // 眼睛（房间眼位与视觉对齐）
-  for (const eyePos of eyes) {
+  // 眼睛（房间眼位与视觉对齐；只有本轮出束的眼睛变红/发亮）
+  eyes.forEach((eyePos, i) => {
     const ex = eyePos.x;
     const ey = eyePos.y;
+    const firing = !firingEyes || firingEyes.includes(i);
     if (!eye.open) {
       line(k, ex - 13, ey, ex + 13, ey, pal.ink, 3);
     } else {
       circle(k, ex, ey, 13, pal.white, { outline: pal.ink, outlineWidth: 2 });
-      const pupil = eye.telegraph ? pal.laser : eye.red ? pal.laser : pal.hairInk;
-      circle(k, ex, ey, eye.telegraph ? 5 : 7, pupil);
-      if (eye.red) {
+      const red = eye.red && firing;
+      const pupil = eye.telegraph && firing ? pal.laser : red ? pal.laser : pal.hairInk;
+      circle(k, ex, ey, eye.telegraph && firing ? 5 : 7, pupil);
+      if (red) {
         circle(k, ex, ey, 16, pal.laser, { opacity: 0.25, fill: true });
+        // 朝向瞳孔外的细光晕，强化“目光”感
+        circle(k, ex, ey, 22, pal.laser, { fill: false, outline: pal.laser, outlineWidth: 1, opacity: 0.35 });
       }
     }
-  }
+  });
 
   // 嘴
   line(k, cx - 24, headY + 62, cx + 24, headY + 62, pal.ink, 3);

@@ -1,52 +1,114 @@
 import type { Rect } from "../core/types";
 import { getPalette } from "./palette";
-import { circle, ellipse, line, rect, text, type KCtx } from "./draw";
+import { circle, ellipse, line, poly, rect, text, type KCtx } from "./draw";
 
-export interface BeamDrawOpt {
-  x: number;
-  top: number;
-  bottom: number;
+export interface GazeFanDrawOpt {
+  eye: { x: number; y: number };
+  /** 扇形边界采样端点（-halfAngle → +halfAngle） */
+  fan: readonly { x: number; y: number }[];
+  /** 中心射线终点（被挂牌/地面截断） */
+  end: { x: number; y: number };
+  halfAngle: number;
   active: boolean;
   telegraph: boolean;
   visualWidth: number;
   beamWidth: number;
-  colorRed: boolean;
 }
 
-/** 笑长激光：预警 1px 细线；开火时 10px 视觉 + 6px 判定（判定由系统算）。 */
-export function drawBeam(k: KCtx, opt: BeamDrawOpt): void {
+/**
+ * 笑长的扇形视线（docs/02 §2.4：从瞳孔射出的旋转扇形）。
+ * 渲染：视线扇形填充 + 两条边界 + 中心核心光束；挂牌遮挡由系统算好端点，这里只画。
+ */
+export function drawGazeFan(k: KCtx, opt: GazeFanDrawOpt): void {
   const pal = getPalette(k);
-  const { x, top, bottom } = opt;
-  const h = Math.max(0, bottom - top);
-  if (h <= 0) return;
+  const { eye, fan, end } = opt;
+  if (fan.length < 2) return;
+  const first = fan[0]!;
+  const last = fan[fan.length - 1]!;
 
   if (opt.telegraph) {
-    line(k, x, top, x, bottom, pal.laser, 1.5, 0.85);
-    // 落点细线
-    line(k, x - 14, bottom, x + 14, bottom, pal.laser, 1, 0.5);
+    // 预警期：只画扇形轮廓 + 中心落点，不填充
+    for (let i = 0; i < fan.length - 1; i++) {
+      const a = fan[i]!;
+      const b = fan[i + 1]!;
+      line(k, a.x, a.y, b.x, b.y, pal.laser, 1, 0.28);
+    }
+    line(k, eye.x, eye.y, first.x, first.y, pal.laser, 1.5, 0.65);
+    line(k, eye.x, eye.y, last.x, last.y, pal.laser, 1.5, 0.65);
+    line(k, eye.x, eye.y, end.x, end.y, pal.laser, 1, 0.85);
+    circle(k, end.x, end.y, 5, pal.laser, { fill: false, outline: pal.laser, outlineWidth: 1, opacity: 0.5 });
     return;
   }
   if (!opt.active) return;
 
-  const color = opt.colorRed ? pal.laser : pal.laser;
-  // 外发光
-  rect(k, x - opt.visualWidth / 2 - 3, top, opt.visualWidth + 6, h, {
-    color,
-    opacity: 0.22,
-    centered: false,
+  // 外层扇形（逐片填充，天然被挂牌端点截断）
+  for (let i = 0; i < fan.length - 1; i++) {
+    const a = fan[i]!;
+    const b = fan[i + 1]!;
+    poly(k, [[eye.x, eye.y], [a.x, a.y], [b.x, b.y]], pal.laser, { opacity: 0.13 });
+  }
+  // 内层更亮一点，显出“目光”聚焦感
+  const mid = Math.floor((fan.length - 1) / 2);
+  for (let i = Math.max(0, mid - 3); i < Math.min(fan.length - 1, mid + 4); i++) {
+    const a = fan[i]!;
+    const b = fan[i + 1]!;
+    poly(k, [[eye.x, eye.y], [a.x, a.y], [b.x, b.y]], pal.laser, { opacity: 0.1 });
+  }
+  // 边界线与中心核心
+  line(k, eye.x, eye.y, first.x, first.y, pal.laser, 1.5, 0.55);
+  line(k, eye.x, eye.y, last.x, last.y, pal.laser, 1.5, 0.55);
+  line(k, eye.x, eye.y, end.x, end.y, pal.laser, opt.visualWidth, 0.45);
+  line(k, eye.x, eye.y, end.x, end.y, pal.white, opt.beamWidth, 0.9);
+  circle(k, eye.x, eye.y, 8, pal.laser, { opacity: 0.4 });
+  circle(k, eye.x, eye.y, 3, pal.white, { opacity: 0.9 });
+  circle(k, end.x, end.y, opt.visualWidth + 3, pal.laser, { opacity: 0.2 });
+}
+
+/** 过场用的手枪剪影（枪身 + 枪管 + 扳机护圈），angle 为弧度。 */
+export function drawGun(k: KCtx, x: number, y: number, angle = 0, flip = 1): void {
+  const pal = getPalette(k);
+  rect(k, x, y - 4, 26 * flip, 8, {
+    color: pal.suitGray,
+    outline: pal.ink,
+    radius: 2,
+    angle,
+    centered: true,
   });
-  // 视觉
-  rect(k, x - opt.visualWidth / 2, top, opt.visualWidth, h, {
-    color,
-    opacity: 0.95,
+  rect(k, x + 15 * flip, y - 3, 10 * flip, 5, {
+    color: pal.ink,
+    radius: 1,
+    angle,
+    centered: true,
   });
-  // 核心
-  rect(k, x - opt.beamWidth / 2, top, opt.beamWidth, h, {
-    color: pal.white,
-    opacity: 0.85,
+  circle(k, x + 15 * flip, y + 1, 3.2, pal.ink);
+  rect(k, x - 8 * flip, y + 4, 6, 9, {
+    color: pal.suitGray,
+    outline: pal.ink,
+    radius: 2,
+    angle,
   });
-  // 落点光斑
-  circle(k, x, bottom, opt.visualWidth + 4, color, { opacity: 0.2 });
+}
+
+/** 枪口火光：四角星 + 中心亮圆。 */
+export function drawMuzzleFlash(k: KCtx, x: number, y: number, scale = 1, alpha = 1): void {
+  const pal = getPalette(k);
+  const r = 18 * scale;
+  poly(
+    k,
+    [
+      [x, y - r],
+      [x + r * 0.28, y - r * 0.28],
+      [x + r, y],
+      [x + r * 0.28, y + r * 0.28],
+      [x, y + r],
+      [x - r * 0.28, y + r * 0.28],
+      [x - r, y],
+      [x - r * 0.28, y - r * 0.28],
+    ],
+    pal.schoolGold,
+    { opacity: 0.9 * alpha },
+  );
+  circle(k, x, y, 6 * scale, pal.white, { opacity: 0.95 * alpha });
 }
 
 export function drawPlayerBullet(k: KCtx, x: number, y: number): void {

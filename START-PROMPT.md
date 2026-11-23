@@ -23,13 +23,14 @@
 - 技术栈：Kaplay 3001 + TypeScript + Vite，纯前端静态站；运行时依赖只有 kaplay。
 - 两关可玩：第一关笑长视线战 + 45s 商店 + 潮夺枪 6s 过场；第二关 6 种攻击 + 巨大化 + 碰鞋 + CP1/CP2。
 - 手机横屏触控 + PC 键鼠；DOM 覆盖层 UI；canvas 只画世界；存档 localStorage key `cmi.save.v1`。
-- `pnpm test` 64 条全绿；`pnpm build` 通过；线上 GitHub Pages 已发布：
+- `pnpm test` 68 条全绿；`pnpm build` 通过；线上 GitHub Pages 已发布：
   https://idealismo10.github.io/WUHUADIxiaozhuan/
   仓库：https://github.com/idealismo10/WUHUADIxiaozhuan
 - 失败音效已处理：public/audio/fail.ogg / fail.mp3 / fail.m4a（源文件已降噪、−16 LUFS、mono 48k）。
 - 已知偏差见 HANDOFF.md §8，例如 P3 凝视锁定调成 4.0s、R2/R3 新增 64px 坑、第二关 Boss 名字仍是占位。
 - 跳跃手感已修：`jumpCutDelay=0.12s`（轻点约 69px / 按住约 103px）；R1/R3 上层平台已横移到可达位置，详见 HANDOFF §6.10。
 - 笑长激光判定已修：P2 双眼真交叉、预警期不再提前漂移、P3 锁定后停住不再追人；P1 时长按行程推导 ≈1.882s 扫满 160→800，详见 HANDOFF §6.11。
+- 2026-11-23 新改动：笑长视线改为从瞳孔射出的扇形“目光”（半角 8°、挂牌斜向阴影）；夺枪过场重做（冲向玩家/枪口火光/连椅倒地/抛枪抛物线）；第二关 Boss 修复（A2 采样、A6 落点、A3 预警、碰鞋优先、香蕉皮红闪）；移动端小屏 HUD 与减少动效震屏。详见 HANDOFF §6.4/§6.5/§6.6/§6.12。
 - **发布注意**：GitHub 用户名已改为 `idealismo10`，仓库改为 `WUHUADIxiaozhuan`，Pages 地址是新 URL；推送前先 `git remote -v` 核对。
 
 【硬约束】

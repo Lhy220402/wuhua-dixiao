@@ -4,7 +4,7 @@ import { XIAOCHANG } from "../content/bosses/boss1";
 import type { BossDef, LaserPatternDef } from "../content/types";
 import { playerRect, type Rect, type Vec } from "../core/types";
 import { LaserBoss } from "../systems/laser-boss";
-import { beamHitsPlayer, exposureFailed, updateExposure } from "../systems/vision";
+import { exposureFailed, gazeFanHitsPlayer, updateExposure } from "../systems/vision";
 
 /**
  * 笑长视线激光状态机回归测试（docs/20 §2.3 / §4）。
@@ -67,7 +67,7 @@ function advanceUntil(
   throw new Error(`condition not reached: ${JSON.stringify(info(boss))}`);
 }
 
-const beamXs = (boss: LaserBoss): number[] => boss.beams.map((b) => Math.round(b.x));
+const beamXs = (boss: LaserBoss): number[] => boss.beams.map((b) => Math.round(b.aimX));
 
 describe("LaserBoss P1 单眼横扫", () => {
   it("预警期光束停在起始位置，预警线就是落点；预警期无判定", () => {
@@ -90,7 +90,7 @@ describe("LaserBoss P1 单眼横扫", () => {
 
     tick(boss, 0.5);
     expect(boss.beams).toHaveLength(1);
-    expect(boss.beams[0]!.x).toBeCloseTo(
+    expect(boss.beams[0]!.aimX).toBeCloseTo(
       BALANCE.level1.p1StartX + BALANCE.level1.p1Speed * 0.5,
       0,
     );
@@ -109,7 +109,7 @@ describe("LaserBoss P1 单眼横扫", () => {
       (BALANCE.level1.p1EndX - BALANCE.level1.p1StartX) / BALANCE.level1.p1Speed,
       1,
     );
-    const endX = boss.beams[0]!.x;
+    const endX = boss.beams[0]!.aimX;
     expect(endX).toBeGreaterThan(BALANCE.level1.p1EndX - 6);
     expect(endX).toBeLessThanOrEqual(BALANCE.level1.p1EndX);
   });
@@ -144,7 +144,7 @@ describe("LaserBoss P2 双眼交叉", () => {
 
     advanceUntil(boss, () => info(boss).mode === "sweep");
     tick(boss, 1.0);
-    expect(boss.beams[0]!.x).toBeCloseTo(
+    expect(boss.beams[0]!.aimX).toBeCloseTo(
       BALANCE.level1.p1StartX + BALANCE.level1.p2Speed * 1.0,
       0,
     );
@@ -178,7 +178,7 @@ describe("LaserBoss P3 凝视锁定", () => {
         boss.update(DT, px);
         const body = playerRect(px, 512, BALANCE.player.w, BALANCE.player.h);
         const visible = boss.state.beams.some((b) =>
-          beamHitsPlayer(b.x, b.top, b.bottom, BALANCE.level1.gazeBeamWidth, body),
+          gazeFanHitsPlayer(b.eye, b.dir, b.halfAngle, body, []),
         );
         exposure = updateExposure(DT, visible, exposure);
         if (dodge && !dodged && info(boss).mode === "sweep") dodged = true;
@@ -217,7 +217,7 @@ describe("LaserBoss 眨眼 / 挂牌", () => {
     expect(boss.state.beams.length).toBeGreaterThan(0);
   });
 
-  it("挂牌把光束截断在挂牌顶面，阴影区不判定；站在挂牌上仍会被照到", () => {
+  it("扇形视线从瞳孔发出，挂牌把中心射线截断在挂牌顶面（阴影安全）", () => {
     const plaque: Rect = { x: 432, y: 256, w: 96, h: 20 };
     const boss = makeBoss({
       eyes: [{ x: 480, y: 64 }],
@@ -229,8 +229,16 @@ describe("LaserBoss 眨眼 / 挂牌", () => {
     });
     advanceUntil(boss, () => info(boss).mode === "sweep");
     const beam = boss.beams[0]!;
-    expect(beam.bottom).toBe(plaque.y);
-    expect(beamHitsPlayer(beam.x, beam.top, beam.bottom, BALANCE.level1.gazeBeamWidth, playerRect(480, 512, 20, 28))).toBe(false);
-    expect(beamHitsPlayer(beam.x, beam.top, beam.bottom, BALANCE.level1.gazeBeamWidth, playerRect(480, 256, 20, 28))).toBe(true);
+    expect(beam.eye).toEqual({ x: 480, y: 64 });
+    expect(beam.end.y).toBeCloseTo(plaque.y, 0);
+    expect(beam.fan).toHaveLength(BALANCE.level1.gazeFanSlices + 1);
+
+    const floorBody = playerRect(480, 512, BALANCE.player.w, BALANCE.player.h);
+    expect(gazeFanHitsPlayer(beam.eye, beam.dir, beam.halfAngle, floorBody, [plaque])).toBe(false);
+    // 没有挂牌时同位置会被照到
+    expect(gazeFanHitsPlayer(beam.eye, beam.dir, beam.halfAngle, floorBody, [])).toBe(true);
+    // 站在挂牌顶面（脚底 y=256）仍会被照到
+    const onPlaque = playerRect(480, 256, BALANCE.player.w, BALANCE.player.h);
+    expect(gazeFanHitsPlayer(beam.eye, beam.dir, beam.halfAngle, onPlaque, [plaque])).toBe(true);
   });
 });

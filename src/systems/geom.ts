@@ -1,7 +1,10 @@
 import type { Rect, Vec } from "../core/types";
 
-/** 线段-矩形相交（slab 法），含端点、相切、零长线段（docs/51 §2.5）。 */
-export function segmentHitsRect(a: Vec, b: Vec, r: Rect): boolean {
+/**
+ * 线段-矩形最近进入参数 t（0..1，slab 法）；不相交返回 null。
+ * 用于“视线被挂牌截断”：射线端点在挂牌表面，之后是阴影。
+ */
+export function segmentRectEntryT(a: Vec, b: Vec, r: Rect): number | null {
   const minX = r.x;
   const maxX = r.x + r.w;
   const minY = r.y;
@@ -25,11 +28,16 @@ export function segmentHitsRect(a: Vec, b: Vec, r: Rect): boolean {
     return true;
   };
 
-  if (!clip(-dx, a.x - minX)) return false;
-  if (!clip(dx, maxX - a.x)) return false;
-  if (!clip(-dy, a.y - minY)) return false;
-  if (!clip(dy, maxY - a.y)) return false;
-  return true;
+  if (!clip(-dx, a.x - minX)) return null;
+  if (!clip(dx, maxX - a.x)) return null;
+  if (!clip(-dy, a.y - minY)) return null;
+  if (!clip(dy, maxY - a.y)) return null;
+  return t0 <= t1 ? t0 : null;
+}
+
+/** 线段-矩形相交（slab 法），含端点、相切、零长线段（docs/51 §2.5）。 */
+export function segmentHitsRect(a: Vec, b: Vec, r: Rect): boolean {
+  return segmentRectEntryT(a, b, r) !== null;
 }
 
 /** 任一点通视即暴露：检查 Boss 眼点到玩家头/胸/脚三点。 */

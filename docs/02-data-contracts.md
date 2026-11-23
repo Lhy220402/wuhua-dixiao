@@ -85,11 +85,13 @@ wuhua-dixiao/
 | exposureThreshold | 2.5 | s | 连续暴露累计，满则失败 |
 | exposureDecay | 3 | × | 离开视线的回落速度倍率 |
 | exposureWarnAt | 0.5 | 比例 | 读条过半触发暗角 + 心跳 |
-| gazeTelegraph | 0.8 | s | 眼睛变红 + 细线预警 |
-| gazeBeamWidth | 6 / 10 | px | 判定宽 / 视觉宽（旋转矩形，视觉更粗便于识别） |
-| gazeBeamLength | 1200 | px | 覆盖全屏 |
-| exposureRate | 1.0 | /s | 光束与玩家碰撞盒重叠时的读条增速；离开视线按 3× 回落 |
-| gazeSweepPeriod | 3.6 | s | 一轮攻击 = 0.8s 预警 + 1.8s 扫射 + 1.0s 收束（眨眼每 4s / 1.2s 窗，错相打断） |
+| gazeTelegraph | 0.8 | s | 眼睛变红 + 扇形轮廓预警 |
+| gazeFanHalfAngle | 8 | ° | 扇形视线半角；玩家身体任一点在扇形内且通视即暴露（2026-11-23 用户要求改为从瞳孔射出的扇形“目光”） |
+| gazeFanSlices | 18 | 条 | 扇形渲染采样射线数（视觉；判定不依赖采样密度） |
+| gazeBeamWidth | 6 / 10 | px | 核心光束判定宽 / 视觉宽（旋转矩形；实际判定按扇形） |
+| gazeBeamLength | 1200 | px | 视线最大长度，遇地面/挂牌截断 |
+| exposureRate | 1.0 | /s | 扇形视线覆盖玩家时的读条增速；离开视线按 3× 回落 |
+| gazeSweepPeriod | 3.6 | s | 基础攻击轮：0.8s 预警 + 1.8s 扫射 + 1.0s 收束；P1 按 640/340≈1.882s 扫满，P3 锁定 4.0s，眨眼每 4s / 1.2s 窗错相打断 |
 | blinkWindow | 1.2 | s | 每 4s 眨眼，光束熄灭 |
 | boss1.hp | 999 | — | 不可被玩家伤害，仅剧情击杀 |
 | level1.cutsceneLen | ≈6 | s | 见 31 分镜 |

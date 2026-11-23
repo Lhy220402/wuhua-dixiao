@@ -105,11 +105,16 @@ export class ArenaBoss {
   private bananaTargets: number[] = [];
 
   private callbacks: ArenaCallbacks | null = null;
+  /** 竞技场讲台掩体（来自房间数据，避免硬编码坐标） */
+  private desks: readonly Rect[];
+  /** A6 踩踏预警时锁定的落点中心（避免“影子在这、脚落在你新位置”） */
+  private stompX = 480;
 
-  constructor(def: BossDef) {
+  constructor(def: BossDef, desks: readonly Rect[] = []) {
     this.def = def;
     this.phase = def.phases[0]!;
     this.hp = def.hp;
+    this.desks = desks;
   }
 
   get state(): ArenaState {
@@ -187,6 +192,7 @@ export class ArenaBoss {
     this.shoeBubbleShown = false;
     this.history = [];
     this.clock = 0;
+    this.stompX = 480;
     this.homingArr = [];
     this.chalkArr = [];
     this.shockArr = [];
@@ -332,7 +338,15 @@ export class ArenaBoss {
         total: this.modeTimer,
       }));
     } else if (this.currentAttack?.id === "a3") {
-      this.warningArr.push({ kind: "shock", x: 900, y: 472, w: 32, h: 40, timer: this.modeTimer, total: this.modeTimer });
+      this.warningArr.push({
+        kind: "shock",
+        x: this.hurtbox.x - 10,
+        y: 472,
+        w: Number(this.currentAttack.params["hitboxW"] ?? 32),
+        h: Number(this.currentAttack.params["hitboxH"] ?? 40),
+        timer: this.modeTimer,
+        total: this.modeTimer,
+      });
     } else if (this.currentAttack?.id === "a4") {
       const baseX = Math.max(220, Math.min(560, Math.round(this.playerHintX / 20) * 20));
       this.bananaTargets = [0, 1, 2].map((i) => baseX + i * 120 - 120);
@@ -434,7 +448,7 @@ export class ArenaBoss {
         this.giantPending = null;
         if (attack.id === "a5") {
           this.shockArr.push({
-            x: 920,
+            x: 896,
             y: 456,
             w: Number(attack.params["hitboxW"] ?? 48),
             h: Number(attack.params["hitboxH"] ?? 56),
@@ -444,7 +458,7 @@ export class ArenaBoss {
         } else if (attack.id === "a6") {
           this.warningArr = this.warningArr.filter((w) => w.kind !== "stomp");
           this.shockArr.push({
-            x: player.x - 48,
+            x: this.stompX - Number(attack.params["hitboxW"] ?? 96) / 2,
             y: 448,
             w: Number(attack.params["hitboxW"] ?? 96),
             h: Number(attack.params["hitboxH"] ?? 64),
@@ -468,12 +482,14 @@ export class ArenaBoss {
         this.giantA6 = BALANCE.attacks.a6.interval;
         this.giantPending = this.phase.attacks.find((a) => a.id === "a6") ?? null;
         this.giantPendingTimer = (this.giantPending?.telegraphMs ?? 800) / 1000;
+        // 预警时锁定落点中心：玩家看到阴影后可以离开，踩踏不再追到新位置
+        this.stompX = player.x;
         this.warningArr.push({
           kind: "stomp",
-          x: player.x,
+          x: this.stompX,
           y: 448,
-          w: 96,
-          h: 64,
+          w: Number(this.giantPending?.params["hitboxW"] ?? 96),
+          h: Number(this.giantPending?.params["hitboxH"] ?? 64),
           timer: this.giantPendingTimer,
           total: this.giantPendingTimer,
         });
@@ -483,11 +499,8 @@ export class ArenaBoss {
   }
 
   private updateProjectiles(dt: number, player: Vec): void {
-    const playerRect: Rect = { x: player.x - 10, y: player.y - 28, w: 20, h: 28 };
-    const desks = [
-      { x: 224, y: 448, w: 96, h: 64 },
-      { x: 480, y: 448, w: 96, h: 64 },
-    ];
+    const pr = BALANCE.player;
+    const playerRect: Rect = { x: player.x - pr.w / 2, y: player.y - pr.h, w: pr.w, h: pr.h };
     const giantBroken = this.giant;
 
     // 追踪弹
@@ -506,7 +519,7 @@ export class ArenaBoss {
       h.y += h.vy * dt;
       h.life -= dt;
       const hr: Rect = { x: h.x - 9, y: h.y - 9, w: 18, h: 18 };
-      if (!giantBroken && desks.some((d) => overlap(hr, d))) {
+      if (!giantBroken && this.desks.some((d) => overlap(hr, d))) {
         this.homingArr.splice(i, 1);
         continue;
       }
@@ -575,13 +588,22 @@ export class ArenaBoss {
     }
   }
 
+  /**
+   * A2 粉笔雨落点：docs/21 L2-05 要求“玩家过去 1.5s 内 5 个位置”，
+   * 按时间等距采样（旧实现按帧号每 3 帧取一个，5 个点几乎叠在同一列）。
+   */
   private sampleHistory(count: number): number[] {
+    const points = this.history.length > 0 ? this.history : [{ x: this.playerHintX, y: 512, t: this.clock }];
+    const span = BALANCE.attacks.a2.sampleHistory;
+    const firstT = this.clock - span;
     const xs: number[] = [];
-    const points = this.history.length > 0 ? this.history : [{ x: 480, y: 512, t: 0 }];
     for (let i = 0; i < count; i++) {
-      const idx = Math.max(0, points.length - 1 - i * 3);
-      const p = points[idx] ?? points[0]!;
-      xs.push(Math.max(60, Math.min(900, p.x)));
+      const targetT = firstT + (span * i) / Math.max(1, count - 1);
+      let best = points[0]!;
+      for (const p of points) {
+        if (Math.abs(p.t - targetT) < Math.abs(best.t - targetT)) best = p;
+      }
+      xs.push(Math.max(60, Math.min(900, best.x)));
     }
     return xs;
   }

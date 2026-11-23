@@ -1,5 +1,6 @@
 import { BALANCE } from "../config/balance";
-import type { Rect } from "../core/types";
+import type { Rect, Vec } from "../core/types";
+import { segmentHitsRect } from "./geom";
 
 export interface ExposureState {
   value: number;
@@ -43,21 +44,46 @@ export function exposureFailed(value: number, threshold = BALANCE.level1.exposur
   return value >= threshold;
 }
 
-/** 竖直光束与玩家碰撞盒重叠（判定宽 6px）。 */
-export function beamHitsPlayer(
-  beamX: number,
-  top: number,
-  bottom: number,
-  width: number,
-  player: Rect,
+/** 玩家碰撞盒内 3×3 采样点：扇形视线用身体任一点判定，避免只测中心漏判。 */
+export function playerSamplePoints(body: Rect): Vec[] {
+  const insetX = Math.min(2, body.w / 4);
+  const insetY = Math.min(2, body.h / 4);
+  const xs = [body.x + insetX, body.x + body.w / 2, body.x + body.w - insetX];
+  const ys = [body.y + insetY, body.y + body.h / 2, body.y + body.h - insetY];
+  const points: Vec[] = [];
+  for (const y of ys) for (const x of xs) points.push({ x, y });
+  return points;
+}
+
+/**
+ * 扇形视线命中（docs/02 §2.4 gazeFanHalfAngle）：
+ * 玩家身体任一点落在扇形角度内，且到瞳孔的连线没有被挂牌挡住 → 暴露。
+ * 挂牌后的斜向阴影因此天然安全（不再要求光束竖直）。
+ */
+export function gazeFanHitsPlayer(
+  eye: Vec,
+  dir: Vec,
+  halfAngle: number,
+  body: Rect,
+  blockers: readonly Rect[] = [],
 ): boolean {
-  if (bottom <= top) return false;
-  const left = beamX - width / 2;
-  const right = beamX + width / 2;
-  return (
-    player.x < right &&
-    player.x + player.w > left &&
-    player.y < bottom &&
-    player.y + player.h > top
-  );
+  if (halfAngle <= 0) return false;
+  const cosHalf = Math.cos(halfAngle);
+  for (const p of playerSamplePoints(body)) {
+    const vx = p.x - eye.x;
+    const vy = p.y - eye.y;
+    const len = Math.hypot(vx, vy);
+    if (len < 1) continue;
+    const cos = (vx * dir.x + vy * dir.y) / len;
+    if (cos < cosHalf) continue;
+    let blocked = false;
+    for (const r of blockers) {
+      if (segmentHitsRect(eye, p, r)) {
+        blocked = true;
+        break;
+      }
+    }
+    if (!blocked) return true;
+  }
+  return false;
 }

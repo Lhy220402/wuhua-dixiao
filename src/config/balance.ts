@@ -113,8 +113,11 @@ export const BALANCE = {
     gazeBeamWidth: 6,
     gazeVisualWidth: 10,
     gazeBeamLength: 1200,
+    /** 扇形视线半角（度）：瞳孔向两侧张开的角度；玩家身体任一点在扇形内且通视即暴露 */
+    gazeFanHalfAngle: 8,
+    /** 扇形渲染采样射线数（视觉，越大越平滑） */
+    gazeFanSlices: 18,
     gazeIdleDuration: 0.4,
-    gazeBeamTopOffset: 8,
     gazeSweepPeriod: 3.6,
     /** P2 交叉的扫射时长；P1 改为按「行程/速度」推导（640/340≈1.882s）以扫满 160→800 */
     gazeSweepDuration: 1.8,

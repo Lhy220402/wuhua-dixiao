@@ -2,20 +2,32 @@ import { BALANCE } from "../config/balance";
 import { LAYOUT } from "../config/layout";
 import type { BossDef, LaserPatternDef } from "../content/types";
 import type { Rect, Vec } from "../core/types";
+import { segmentRectEntryT } from "./geom";
 
-export interface LaserBeam {
+/** 一条「目光」：从瞳孔射出的扇形视线（判定按扇形，渲染用采样射线）。 */
+export interface GazeBeam {
+  /** 瞳孔位置（扇形原点） */
   eye: Vec;
-  x: number;
-  top: number;
-  bottom: number;
+  /** 扇形中心单位方向 */
+  dir: Vec;
+  /** 扇形半角（弧度） */
+  halfAngle: number;
+  /** 地面瞄点 x（状态机的扫描值；P1 160→800、P2 交叉、P3 玩家 x） */
+  aimX: number;
+  /** 中心射线被挂牌/地面截断后的终点 */
+  end: Vec;
+  /** 扇形边界采样点（-halfAngle → +halfAngle，含两端），用于渲染 */
+  fan: Vec[];
 }
 
 export interface LaserBossState {
-  beams: LaserBeam[];
+  beams: GazeBeam[];
   blink: boolean;
   telegraph: boolean;
   eyeRed: boolean;
   phaseLabel: string;
+  /** 本轮哪几只眼在“看”（P1 只右眼，P2/P3 双眼） */
+  firingEyes: number[];
 }
 
 /** 数据缺失时的兜底模式（内容层始终提供完整 patterns，这里只保证不崩）。 */
@@ -27,6 +39,9 @@ const FALLBACK_PATTERN: LaserPatternDef = {
   endX: BALANCE.level1.p1EndX,
   speed: BALANCE.level1.p1Speed,
 };
+
+const FAN_HALF_ANGLE = (BALANCE.level1.gazeFanHalfAngle * Math.PI) / 180;
+const FAN_SLICES = Math.max(2, BALANCE.level1.gazeFanSlices);
 
 /** 第一关笑长视线激光状态机（docs/20 §2.3 / §4）。 */
 export class LaserBoss {
@@ -41,6 +56,7 @@ export class LaserBoss {
   private modeTimer = 0;
   private round = 0;
   private pattern: LaserPatternDef;
+  /** 每只眼的地面瞄点 x（状态机维度；几何在 beams getter 里由它推导） */
   private beamX: number[] = [];
   private active = false;
   private wasActiveBeforeBlink = false;
@@ -64,6 +80,7 @@ export class LaserBoss {
       telegraph: this.telegraph,
       eyeRed: this.eyeRed,
       phaseLabel: this.pattern.label,
+      firingEyes: this.firingEyes,
     };
   }
 
@@ -77,16 +94,19 @@ export class LaserBoss {
       blinkClock: this.blinkClock,
       pattern: this.pattern.id,
       beamX: this.beamX,
+      firingEyes: this.firingEyes,
     };
   }
 
-  get beams(): LaserBeam[] {
-    return this.beamX
-      .map((x, i) => {
-        const eye = this.eyes[i]!;
-        return { eye, x, top: eye.y + BALANCE.level1.gazeBeamTopOffset, bottom: this.beamBottom(x, eye.y) };
-      })
-      .filter((_, i) => this.pattern.kind !== "sweep" || this.eyes.length === 1 || i === this.eyes.length - 1);
+  /** 本轮出束的眼睛下标：P1 单眼横扫只右眼；P2 交叉 / P3 锁定双眼。 */
+  get firingEyes(): number[] {
+    if (this.eyes.length === 0) return [];
+    if (this.pattern.kind === "sweep") return [this.eyes.length - 1];
+    return this.eyes.map((_, i) => i);
+  }
+
+  get beams(): GazeBeam[] {
+    return this.firingEyes.map((i) => this.makeBeam(this.eyes[i]!, this.beamX[i] ?? LAYOUT.cameraX));
   }
 
   get telegraph(): boolean {
@@ -214,7 +234,7 @@ export class LaserBoss {
   }
 
   /**
-   * 光束推进（docs/20 §2.3）：
+   * 视线推进（docs/20 §2.3）：
    * - 预警期没有判定，横扫/交叉停在起始位置（预警线即落点）；只有 P3 锁定在这段时间追踪玩家；
    * - 开火后 P1 匀速横扫、P2 双束反向对扫；P3 已锁定，停在锁定点不再跟人。
    */
@@ -239,7 +259,7 @@ export class LaserBoss {
     });
   }
 
-  /** 双眼反向对扫：左束往右端、右束往左端（原来两束都朝自己起点，永远不动）。 */
+  /** 双眼反向对扫：左束往右端、右束往左端。 */
   private crossBeamX(dt: number): void {
     const startX = this.pattern.startX ?? BALANCE.level1.p1StartX;
     const endX = this.pattern.endX ?? BALANCE.level1.p1EndX;
@@ -259,13 +279,51 @@ export class LaserBoss {
     });
   }
 
-  private beamBottom(x: number, eyeY: number): number {
-    let bottom: number = LAYOUT.floorTop;
-    for (const plaque of this.plaques) {
-      if (x >= plaque.x && x <= plaque.x + plaque.w) {
-        bottom = Math.min(bottom, plaque.y);
+  /** 从瞳孔到地面瞄点，构造扇形视线 + 被挂牌/地面截断的采样端点。 */
+  private makeBeam(eye: Vec, aimX: number): GazeBeam {
+    const floorY = LAYOUT.floorTop;
+    const dx = aimX - eye.x;
+    const dy = floorY - eye.y;
+    const len = Math.hypot(dx, dy) || 1;
+    const baseX = dx / len;
+    const baseY = dy / len;
+    const dirAt = (offset: number): Vec => {
+      const c = Math.cos(offset);
+      const s = Math.sin(offset);
+      return { x: baseX * c - baseY * s, y: baseX * s + baseY * c };
+    };
+    const dir = dirAt(0);
+    const fan: Vec[] = [];
+    for (let i = 0; i <= FAN_SLICES; i++) {
+      const offset = -FAN_HALF_ANGLE + (2 * FAN_HALF_ANGLE * i) / FAN_SLICES;
+      fan.push(this.clipRay(eye, dirAt(offset)));
+    }
+    return {
+      eye,
+      dir,
+      halfAngle: FAN_HALF_ANGLE,
+      aimX,
+      end: this.clipRay(eye, dir),
+      fan,
+    };
+  }
+
+  /** 射线先撞地面或被挂牌挡住就截断；之后是阴影。 */
+  private clipRay(eye: Vec, dir: Vec): Vec {
+    const floorY = LAYOUT.floorTop;
+    let maxDist: number = BALANCE.level1.gazeBeamLength;
+    if (dir.y > 1e-4) {
+      const toFloor = (floorY - eye.y) / dir.y;
+      if (toFloor > 0) maxDist = Math.min(maxDist, toFloor);
+    }
+    if (this.plaques.length > 0) {
+      const farDist = maxDist;
+      const far: Vec = { x: eye.x + dir.x * farDist, y: eye.y + dir.y * farDist };
+      for (const plaque of this.plaques) {
+        const t = segmentRectEntryT(eye, far, plaque);
+        if (t !== null) maxDist = Math.min(maxDist, t * farDist);
       }
     }
-    return Math.max(eyeY + BALANCE.level1.gazeBeamTopOffset, bottom);
+    return { x: eye.x + dir.x * maxDist, y: eye.y + dir.y * maxDist };
   }
 }

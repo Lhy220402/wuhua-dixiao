@@ -12,7 +12,10 @@ import {
 import type { BossDef, DialogueDef, ItemDef, LevelDef, NpcDef, RoomDef } from "../content/types";
 import {
   clamp,
+  easeInOutQuad,
+  easeOutCubic,
   formatTime,
+  lerp,
   playerRect,
   rectsOverlap,
   type GameState,
@@ -24,11 +27,13 @@ import { getPalette } from "../art/palette";
 import { drawBoss1, drawBoss2, drawShoe } from "../art/bosses";
 import {
   drawBanana,
-  drawBeam,
   drawChalkFall,
+  drawGazeFan,
   drawChalkWarning,
   drawFloatText,
+  drawGun,
   drawHomingChalk,
+  drawMuzzleFlash,
   drawParticles,
   drawPlayerBullet,
   drawShockwave,
@@ -48,7 +53,7 @@ import {
   drawShopPedestal,
   drawSpikes,
 } from "../art/tiles";
-import { circle, ellipse, line, rect, text } from "../art/draw";
+import { circle, ellipse, line, poly, rect, text } from "../art/draw";
 import { SaveStore } from "../save/storage";
 import type { SaveV1 } from "../save/schema";
 import { defaultSave } from "../save/schema";
@@ -76,7 +81,7 @@ import { LaserBoss } from "../systems/laser-boss";
 import { isFallingOut, overlapsHazard, stepPlayer, type PlayerStepResult } from "../systems/physics";
 import { exitAt } from "../systems/room-loader";
 import { loanToThreshold, purchase } from "../systems/shop";
-import { beamHitsPlayer, exposureFailed, updateExposure } from "../systems/vision";
+import { exposureFailed, gazeFanHitsPlayer, updateExposure } from "../systems/vision";
 import { DialogueBox } from "../ui/dialogue-box";
 import { Hud } from "../ui/hud";
 import { Overlays } from "../ui/overlays";
@@ -114,6 +119,57 @@ interface CutsceneVisual {
   bossDead: boolean;
   gunOut: boolean;
   text: string | null;
+  /** 过场开始时玩家位置：潮从右侧冲到玩家身边，枪最终抛回这里 */
+  playerAnchorX: number;
+  chaoFromX: number;
+  chaoTargetX: number;
+  chaoStart: number;
+  chaoMs: number;
+  chaoReturnFromX: number;
+  chaoReturnToX: number;
+  chaoReturnAt: number;
+  chaoReturnMs: number;
+  shotAt: number;
+  shotMs: number;
+  shotFrom: Vec;
+  shotTo: Vec;
+  fallAt: number;
+  fallMs: number;
+  tossAt: number;
+  tossMs: number;
+  tossFrom: Vec;
+  tossTo: Vec;
+}
+
+const CUTSCENE_NONE = -1;
+
+function emptyCutsceneVisual(playerAnchorX = 480): CutsceneVisual {
+  return {
+    chao: false,
+    chaoX: 1010,
+    bossDead: false,
+    gunOut: false,
+    text: null,
+    playerAnchorX,
+    chaoFromX: 1010,
+    chaoTargetX: Math.min(906, playerAnchorX + 52),
+    chaoStart: CUTSCENE_NONE,
+    chaoMs: 400,
+    chaoReturnFromX: 1010,
+    chaoReturnToX: 520,
+    chaoReturnAt: CUTSCENE_NONE,
+    chaoReturnMs: 700,
+    shotAt: CUTSCENE_NONE,
+    shotMs: 300,
+    shotFrom: { x: 0, y: 0 },
+    shotTo: { x: 480, y: 120 },
+    fallAt: CUTSCENE_NONE,
+    fallMs: 1500,
+    tossAt: CUTSCENE_NONE,
+    tossMs: 500,
+    tossFrom: { x: 0, y: 0 },
+    tossTo: { x: playerAnchorX, y: 512 - 48 },
+  };
 }
 
 type SettingsContext = "title" | "pause" | null;
@@ -160,13 +216,7 @@ export class GameApp {
   private checkpointToastShown = new Set<string>();
   private initialLoad = true;
   private level2StipendGranted = false;
-  private cutsceneVisual: CutsceneVisual = {
-    chao: false,
-    chaoX: 960,
-    bossDead: false,
-    gunOut: false,
-    text: null,
-  };
+  private cutsceneVisual: CutsceneVisual = emptyCutsceneVisual();
   private cutscenePost: "none" | "level1-clear" | "level2-clear" | "resume" = "none";
   private xiaomingNextBubble = 0;
   private xiaomingWaveUntil = 0;
@@ -493,7 +543,7 @@ export class GameApp {
         );
       } else if (room.boss.bossId === "boss2") {
         const def = BOSS_BY_ID["boss2"]!;
-        this.arenaBoss = new ArenaBoss(def);
+        this.arenaBoss = new ArenaBoss(def, room.desks ?? []);
         if (this.run.giant) this.arenaBoss.restoreGiant();
       }
     } else if (room.eyes && room.eyes.length > 0) {
@@ -823,11 +873,24 @@ export class GameApp {
 
   private onArenaHurt(source: string, hpLoss: number, coinLoss: number): void {
     if (this.fsm.state !== "Playing" || this.run.victory) return;
+    // docs/21 §2.6：同帧受击时碰鞋胜利优先
+    if (this.arenaBoss?.isShoeActive) {
+      const body = playerRect(this.run.player.x, this.run.player.y, BALANCE.player.w, BALANCE.player.h);
+      if (rectsOverlap(body, this.arenaBoss.shoeHitbox)) {
+        this.startShoeVictory();
+        return;
+      }
+    }
     if (source === "banana") {
+      // 踩在香蕉上时每帧都会 overlap：只在首次滑倒时红闪，之后只续滑倒时间
+      if (this.run.player.slipTimer > 0) {
+        this.run.player.slipTimer = BALANCE.attacks.a4.slipDuration;
+        return;
+      }
       this.run.player.slipTimer = BALANCE.attacks.a4.slipDuration;
-      this.run.player.facing = this.run.player.facing; // 保持朝向，滑倒由系统推动
       this.run.player.vx = 0;
       this.overlays.flash("red", 0.12, 120);
+      this.audio.playSfx("sfx.hurt");
       return;
     }
     if (this.run.player.invuln > 0) return;
@@ -844,7 +907,7 @@ export class GameApp {
     this.run.player.vx = (this.run.player.x < 480 ? 1 : -1) * BALANCE.player.hitKnockbackX;
     this.run.player.vy = -BALANCE.player.hitKnockbackY;
     this.overlays.flash("red", BALANCE.motion.flashAlpha, BALANCE.motion.flashHurt);
-    this.k.shake(BALANCE.motion.shakeHit);
+    this.screenShake(BALANCE.motion.shakeHit);
     this.audio.playSfx("sfx.hurt");
     this.audio.duckBgm(0.5, 400);
     this.events.emit("game:player-damaged", {
@@ -871,8 +934,9 @@ export class GameApp {
       let visible = false;
       if (!state.blink) {
         const body = playerRect(this.run.player.x, this.run.player.y, BALANCE.player.w, BALANCE.player.h);
+        const blockers = this.room.plaques ?? [];
         for (const beam of state.beams) {
-          if (beamHitsPlayer(beam.x, beam.top, beam.bottom, BALANCE.level1.gazeBeamWidth, body)) {
+          if (gazeFanHitsPlayer(beam.eye, beam.dir, beam.halfAngle, body, blockers)) {
             visible = true;
             break;
           }
@@ -1160,7 +1224,7 @@ export class GameApp {
         this.run.hp = res.hp;
         this.run.player.invuln = BALANCE.npc.jiashengPostHitInvuln;
         this.overlays.flash("red", 0.28, 200);
-        this.k.shake(BALANCE.npc.jiashengShake);
+        this.screenShake(BALANCE.npc.jiashengShake);
         this.audio.playSfx("sfx.hurt");
         if (res.hpLost > 0) {
           this.overlays.toast(`假生：都这个点了还没死呢（-${res.hpLost} HP）`, "danger", 2000);
@@ -1247,13 +1311,24 @@ export class GameApp {
   // 过场
   // ============================================================
 
+  /** 过场视觉状态复位；playerAnchorX 用当前玩家位置（潮冲向他、枪抛回他手里）。 */
+  private resetCutsceneVisual(): void {
+    const anchorX = clamp(this.run.player.x, 40, 920);
+    this.cutsceneVisual = emptyCutsceneVisual(anchorX);
+  }
+
   private startGunCutscene(): void {
     const def = CONTENT.cutscenes["l1_gun_gag"];
     if (!def) return;
     this.shopPanel.close();
     if (!this.fsm.goState("Cutscene")) return;
     this.cutscenePost = "level1-clear";
-    this.cutsceneVisual = { chao: false, chaoX: 960, bossDead: false, gunOut: false, text: null };
+    this.resetCutsceneVisual();
+    // docs/20 §2.5：过场期间激光全熄、读条清零、玩家无敌
+    this.laserBoss?.reset();
+    this.run.exposure = 0;
+    this.run.exposureWarned = false;
+    this.run.player.invuln = 99;
     this.audio.duckBgm(0.35, 200);
     this.audio.playSfx("sfx.phase");
     this.events.emit("game:cutscene-start", { cutsceneId: def.id });
@@ -1274,7 +1349,7 @@ export class GameApp {
     if (!def || !this.arenaBoss) return;
     if (!this.fsm.goState("Cutscene")) return;
     this.cutscenePost = "resume";
-    this.cutsceneVisual = { chao: false, chaoX: 960, bossDead: false, gunOut: false, text: null };
+    this.resetCutsceneVisual();
     this.run.giant = true;
     this.audio.playSfx("sfx.phase");
     this.audio.duckBgm(0.35, 200);
@@ -1292,11 +1367,13 @@ export class GameApp {
   private startShoeVictory(): void {
     const def = CONTENT.cutscenes["l2_shoe"];
     if (!def || !this.arenaBoss) return;
+    if (this.run.victory) return;
+    if (this.fsm.state !== "Playing") return;
     this.run.victory = true;
     this.run.player.invuln = 99;
     if (!this.fsm.goState("Cutscene")) return;
     this.cutscenePost = "level2-clear";
-    this.cutsceneVisual = { chao: false, chaoX: 960, bossDead: false, gunOut: false, text: null };
+    this.resetCutsceneVisual();
     this.events.emit("game:boss-defeated", { bossId: "boss2", method: "shoe" });
     this.audio.duckBgm(0.35, 200);
     this.overlays.showCutsceneSkip(() => this.cutscene.skip());
@@ -1318,30 +1395,58 @@ export class GameApp {
         this.audio.playSfx("sfx.dialogue");
         break;
       }
-      case "enterChao":
-        this.cutsceneVisual.chao = true;
-        this.cutsceneVisual.chaoX = 960;
+      case "enterChao": {
+        const v = this.cutsceneVisual;
+        v.chao = true;
+        v.chaoFromX = 1010;
+        v.chaoX = v.chaoFromX;
+        v.chaoTargetX = Math.min(906, v.playerAnchorX + 52);
+        v.chaoStart = this.cutscene.elapsed;
+        v.chaoMs = step.durationMs ?? 400;
+        v.shotFrom = { x: v.chaoTargetX - 16, y: 512 - 58 };
         this.audio.playSfx("sfx.purchase");
         break;
-      case "gunshot":
-        this.cutsceneVisual.gunOut = true;
+      }
+      case "gunshot": {
+        const v = this.cutsceneVisual;
+        v.gunOut = true;
+        v.shotAt = this.cutscene.elapsed;
+        v.shotMs = step.durationMs ?? 300;
+        v.shotFrom = { x: v.chaoX - 16, y: 512 - 58 };
+        v.shotTo = { x: 480, y: 120 };
         this.audio.playSfx("sfx.gunshot");
         this.overlays.flash("white", 0.9, 120);
-        this.k.shake(6);
+        this.screenShake(6);
         break;
-      case "bossDie":
-        this.cutsceneVisual.bossDead = true;
-        this.cutsceneVisual.gunOut = false;
+      }
+      case "bossDie": {
+        const v = this.cutsceneVisual;
+        v.bossDead = true;
+        v.gunOut = false;
+        v.fallAt = this.cutscene.elapsed;
+        v.fallMs = step.durationMs ?? 1500;
+        v.chaoReturnFromX = v.chaoX;
+        v.chaoReturnToX = 520;
+        v.chaoReturnAt = this.cutscene.elapsed + 150;
+        v.chaoReturnMs = 700;
         this.run.bossDefeated = true;
         if (this.cutscene.id === "l1_gun_gag") {
           this.events.emit("game:boss-defeated", { bossId: "xiaochang", method: "chao" });
         }
-        this.k.shake(6);
+        this.screenShake(6);
         this.audio.playSfx("sfx.land");
         break;
-      case "throwGun":
-        this.cutsceneVisual.gunOut = true;
+      }
+      case "throwGun": {
+        const v = this.cutsceneVisual;
+        v.gunOut = true;
+        v.tossAt = this.cutscene.elapsed;
+        v.tossMs = step.durationMs ?? 500;
+        v.tossFrom = { x: v.chaoX - 18, y: 512 - 56 };
+        v.tossTo = { x: v.playerAnchorX, y: 512 - 48 };
+        this.audio.playSfx("sfx.purchase");
         break;
+      }
       case "grantItem": {
         const itemId = String(params["itemId"] ?? "bullet_gun");
         if (addItem(this.run, itemId)) {
@@ -1350,6 +1455,7 @@ export class GameApp {
           this.overlays.toast("获得 · 子弹枪（潮的馈赠）", "success", 2200);
           markSeenCutscene(this.run, "l1_gun_gag");
           addMeme(this.run, "da_si_ren");
+          this.cutsceneVisual.gunOut = false;
           this.persistNow();
         }
         break;
@@ -1362,14 +1468,14 @@ export class GameApp {
         this.run.giant = true;
         this.solidRects = this.buildSolids(this.room!);
         this.overlays.flash("white", 0.9, 120);
-        this.k.shake(8);
+        this.screenShake(8);
         break;
       case "victory":
         this.overlays.flash("white", 0.6, 150);
-        this.k.shake(4);
+        this.screenShake(4);
         break;
       case "shake":
-        this.k.shake(Number(params["amp"] ?? 4));
+        this.screenShake(Number(params["amp"] ?? 4));
         break;
       case "flash":
         this.overlays.flash(params["color"] === "black" ? "white" : "white", 0.5, 120);
@@ -1386,8 +1492,15 @@ export class GameApp {
 
   private updateCutscene(dt: number): void {
     this.cutscene.update(dt);
-    if (this.cutsceneVisual.chao && this.cutsceneVisual.chaoX > 520) {
-      this.cutsceneVisual.chaoX -= 550 * dt;
+    const v = this.cutsceneVisual;
+    const t = this.cutscene.elapsed;
+    if (v.chao && v.chaoStart >= 0) {
+      const p = clamp((t - v.chaoStart) / Math.max(1, v.chaoMs), 0, 1);
+      v.chaoX = lerp(v.chaoFromX, v.chaoTargetX, easeOutCubic(p));
+      if (v.chaoReturnAt >= 0 && t >= v.chaoReturnAt) {
+        const rp = clamp((t - v.chaoReturnAt) / Math.max(1, v.chaoReturnMs), 0, 1);
+        v.chaoX = lerp(v.chaoReturnFromX, v.chaoReturnToX, easeInOutQuad(rp));
+      }
     }
     if (this.input.pressed("confirm") || this.input.pressed("skip")) {
       this.cutscene.skip();
@@ -1800,7 +1913,7 @@ export class GameApp {
         ? {
             telegraph: this.laserBoss.state.telegraph,
             blink: this.laserBoss.state.blink,
-            beams: this.laserBoss.state.beams.map((b) => Math.round(b.x)),
+            beams: this.laserBoss.state.beams.map((b) => Math.round(b.aimX)),
             phase: this.laserBoss.state.phaseLabel,
             debug: this.laserBoss.debugInfo,
           }
@@ -1908,6 +2021,12 @@ export class GameApp {
     }
     void before;
     this.persistSoon();
+  }
+
+  /** 震屏统一入口：减少动效时关闭（docs/20 验收：减少动效关震屏）。 */
+  private screenShake(amount: number): void {
+    if (this.save.settings.reduceMotion) return;
+    this.k.shake(amount);
   }
 
   private updateHud(): void {
@@ -2023,16 +2142,14 @@ export class GameApp {
     const eyes = this.room.eyes ?? [];
     if (this.room.id === "l1-r4") {
       if (this.cutsceneVisual.bossDead) {
-        // 倒地：座椅翻倒的简化剪影
-        rect(k, 360, 400, 240, 26, { color: pal.bossPurple, outline: pal.ink, radius: 8, angle: -8, centered: true });
-        circle(k, 280, 430, 40, pal.skin, { outline: pal.ink, outlineWidth: 3 });
+        this.drawBossFall(k, pal);
         return;
       }
-      drawBoss1(k, eyes, { open: !state.blink, red: state.eyeRed, telegraph: state.telegraph }, this.clock);
+      drawBoss1(k, eyes, { open: !state.blink, red: state.eyeRed, telegraph: state.telegraph }, this.clock, state.firingEyes);
     } else {
-      // R2/R3：漂浮在教学楼里的眼睛
-      for (const eye of eyes) {
-        const red = state.eyeRed;
+      // R2/R3：漂浮在教学楼里的眼睛（只有本轮“在看”的眼睛变红）
+      eyes.forEach((eye, i) => {
+        const red = state.eyeRed && state.firingEyes.includes(i);
         if (state.blink) {
           line(k, eye.x - 18, eye.y, eye.x + 18, eye.y, pal.ink, 4);
         } else {
@@ -2040,27 +2157,34 @@ export class GameApp {
           circle(k, eye.x, eye.y, red ? 6 : 7, red ? pal.laser : pal.hairInk);
           if (red) circle(k, eye.x, eye.y, 24, pal.laser, { fill: false, outline: pal.laser, outlineWidth: 2, opacity: 0.45 });
         }
-      }
+      });
     }
 
-    // 光束（先画细线预警，再画光束）。眨眼中眼睛已闭、判定冻结，预警线也一并隐藏
+    // 扇形视线（预警期轮廓，开火后填充 + 核心光束）；眨眼时判定冻结、一并隐藏
     if (state.telegraph && !state.blink) {
-      const beams = this.laserBoss.beams;
-      for (const b of beams) {
-        line(k, b.x, b.top, b.x, b.bottom, pal.laser, 1, 0.8);
-        line(k, b.x - 14, b.bottom, b.x + 14, b.bottom, pal.laser, 1, 0.5);
+      for (const b of this.laserBoss.beams) {
+        drawGazeFan(k, {
+          eye: b.eye,
+          fan: b.fan,
+          end: b.end,
+          halfAngle: b.halfAngle,
+          active: false,
+          telegraph: true,
+          visualWidth: BALANCE.level1.gazeVisualWidth,
+          beamWidth: BALANCE.level1.gazeBeamWidth,
+        });
       }
-    } else {
+    } else if (!state.blink) {
       for (const b of state.beams) {
-        drawBeam(k, {
-          x: b.x,
-          top: b.top,
-          bottom: b.bottom,
+        drawGazeFan(k, {
+          eye: b.eye,
+          fan: b.fan,
+          end: b.end,
+          halfAngle: b.halfAngle,
           active: true,
           telegraph: false,
           visualWidth: BALANCE.level1.gazeVisualWidth,
           beamWidth: BALANCE.level1.gazeBeamWidth,
-          colorRed: true,
         });
       }
     }
@@ -2135,20 +2259,147 @@ export class GameApp {
   private drawCutsceneOverlay(): void {
     const k = this.k;
     const pal = getPalette(k);
-    // 上下黑边
-    rect(k, 0, 0, 960, BALANCE.cutscene.letterbox, { color: pal.ink });
-    rect(k, 0, 540 - BALANCE.cutscene.letterbox, 960, BALANCE.cutscene.letterbox, { color: pal.ink });
-    if (this.cutsceneVisual.chao) {
-      drawNpc(k, "chao", { x: this.cutsceneVisual.chaoX, y: 512 }, {
+    const v = this.cutsceneVisual;
+    const t = this.cutscene.elapsed;
+    // 上下黑边（0.3s 滑入）
+    const bar = BALANCE.cutscene.letterbox * clamp(t / (BALANCE.cutscene.letterboxIn * 1000), 0, 1);
+    rect(k, 0, 0, 960, bar, { color: pal.ink });
+    rect(k, 0, 540 - bar, 960, bar, { color: pal.ink });
+
+    const reduce = this.save.settings.reduceMotion;
+    if (v.chao) {
+      const dashing = v.chaoStart >= 0 && t < v.chaoStart + v.chaoMs + 80;
+      if (dashing && !reduce) {
+        for (let i = 1; i <= 4; i++) {
+          const sx = v.chaoX + 20 + i * 18;
+          line(k, sx, 300 + i * 26, sx + 44, 300 + i * 26, pal.white, 2, 0.15 - i * 0.02);
+        }
+        for (let i = 0; i < 3; i++) {
+          ellipse(k, v.chaoX - 12 + i * 16, 508, 12, 4, pal.chalk2, { opacity: 0.28 });
+        }
+      }
+      drawNpc(k, "chao", { x: v.chaoX, y: 512 }, {
         animTime: this.clock,
         hint: false,
         facing: -1,
         talking: false,
       });
+      const holdingGun =
+        v.chaoStart >= 0 &&
+        t >= v.chaoStart + v.chaoMs &&
+        !v.gunOut &&
+        v.tossAt < 0;
+      if (holdingGun) {
+        drawGun(k, v.chaoX - 18, 512 - 56, 0);
+      }
     }
-    if (this.cutsceneVisual.gunOut) {
-      rect(k, 500, 350, 30, 8, { color: pal.suitGray, outline: pal.ink, radius: 2 });
-      circle(k, 532, 354, 3, pal.schoolGold);
+
+    // 枪响：枪口火光 + 曳光 + 命中闪
+    if (v.shotAt >= 0 && t >= v.shotAt && t <= v.shotAt + v.shotMs + 180) {
+      const u = clamp((t - v.shotAt) / Math.max(1, v.shotMs), 0, 1);
+      const muzzle = { x: v.shotFrom.x, y: v.shotFrom.y };
+      if (u <= 0.45) drawMuzzleFlash(k, muzzle.x, muzzle.y, 1 + u, 1 - u / 0.45);
+      const reach = Math.min(1, u * 1.7);
+      const tip = {
+        x: lerp(v.shotFrom.x, v.shotTo.x, reach),
+        y: lerp(v.shotFrom.y, v.shotTo.y, reach),
+      };
+      line(k, v.shotFrom.x, v.shotFrom.y, tip.x, tip.y, pal.schoolGold, 2, 0.85 * (1 - u * 0.45));
+      if (u > 0.55) {
+        const r = 28 * (1 - (u - 0.55) / 0.45);
+        circle(k, v.shotTo.x, v.shotTo.y, Math.max(1, r), pal.white, { opacity: 0.35 });
+      }
+      drawGun(k, muzzle.x, muzzle.y, Math.atan2(v.shotTo.y - muzzle.y, v.shotTo.x - muzzle.x));
+    }
+
+    // 枪抛回：抛物线 + 旋转；落地后留在玩家手里
+    if (v.gunOut && v.tossAt >= 0 && t >= v.tossAt) {
+      const u = clamp((t - v.tossAt) / Math.max(1, v.tossMs), 0, 1);
+      const x = lerp(v.tossFrom.x, v.tossTo.x, u);
+      const baseY = lerp(v.tossFrom.y, v.tossTo.y, u);
+      const y = baseY - Math.sin(Math.PI * u) * 150;
+      drawGun(k, x, y, u * Math.PI * 2);
+      if (u > 0.25 && u < 0.9) circle(k, x, y, 12, pal.coin, { opacity: 0.16 });
+    }
+  }
+
+  /** 笑长倒地：连人带椅向侧面滑倒 + 帽子掉落 + 尘土（过场 1.5s）。 */
+  private drawBossFall(k: KAPLAYCtx, pal: ReturnType<typeof getPalette>): void {
+    const v = this.cutsceneVisual;
+    const t = this.cutscene.elapsed;
+    const p = v.fallAt >= 0 ? clamp((t - v.fallAt) / Math.max(1, v.fallMs), 0, 1) : 1;
+    const eased = easeOutCubic(p);
+    const pivot = { x: 480, y: 500 };
+    const angle = -6 - 74 * eased;
+    const rad = (angle * Math.PI) / 180;
+    const rot = (x: number, y: number): Vec => {
+      const dx = x - pivot.x;
+      const dy = y - pivot.y;
+      return {
+        x: pivot.x + dx * Math.cos(rad) - dy * Math.sin(rad),
+        y: pivot.y + dx * Math.sin(rad) + dy * Math.cos(rad),
+      };
+    };
+    // 尘土（减少动效时省略）
+    if (!this.save.settings.reduceMotion) {
+      for (let i = 0; i < 7; i++) {
+        ellipse(k, 300 + i * 52, 508 - (i % 2) * 4, 22 + eased * 18, 8, pal.chalk2, {
+          opacity: 0.16 + eased * 0.14,
+        });
+      }
+    }
+    // 高背椅
+    const back = rot(480, 380);
+    rect(k, back.x, back.y, 220, 210, {
+      color: pal.bossPurple,
+      outline: pal.ink,
+      radius: 12,
+      angle,
+      centered: true,
+    });
+    const seat = rot(480, 490);
+    rect(k, seat.x, seat.y, 300, 40, {
+      color: pal.emperorRobeDark,
+      outline: pal.ink,
+      radius: 8,
+      angle,
+      centered: true,
+    });
+    // 身体
+    const bodyPts = (
+      [
+        [400, 300],
+        [560, 300],
+        [540, 470],
+        [420, 470],
+      ] as [number, number][]
+    ).map(([x, y]) => {
+      const q = rot(x, y);
+      return [q.x, q.y] as [number, number];
+    });
+    poly(k, bodyPts, pal.bossPurple, { outline: pal.ink, outlineWidth: 2 });
+    // 头 + X 眼
+    const head = rot(480, 120);
+    circle(k, head.x, head.y, 62, pal.skin, { outline: pal.ink, outlineWidth: 3 });
+    circle(k, head.x - 22, head.y + 6, 12, pal.white, { outline: pal.ink, outlineWidth: 2 });
+    circle(k, head.x + 22, head.y + 6, 12, pal.white, { outline: pal.ink, outlineWidth: 2 });
+    line(k, head.x - 28, head.y, head.x - 16, head.y + 12, pal.ink, 3);
+    line(k, head.x - 16, head.y, head.x - 28, head.y + 12, pal.ink, 3);
+    line(k, head.x + 16, head.y, head.x + 28, head.y + 12, pal.ink, 3);
+    line(k, head.x + 28, head.y, head.x + 16, head.y + 12, pal.ink, 3);
+    // 礼帽掉落
+    const hatX = 480 + 150 * eased;
+    const hatY = lerp(70, 500, Math.min(1, eased * 1.35));
+    ellipse(k, hatX, hatY, 40, 9, pal.hairInk, { outline: pal.ink, outlineWidth: 2 });
+    circle(k, hatX, hatY - 8, 18, pal.hairInk, { outline: pal.ink, outlineWidth: 2 });
+    // 晕眩星星（减少动效时省略）
+    if (p > 0.65 && !this.save.settings.reduceMotion) {
+      for (let i = 0; i < 3; i++) {
+        const a = this.clock * 2 + i * 2.1;
+        circle(k, head.x + Math.cos(a) * 70, head.y - 60 + Math.sin(a) * 16, 3, pal.schoolGold, {
+          opacity: 0.8,
+        });
+      }
     }
   }
 
